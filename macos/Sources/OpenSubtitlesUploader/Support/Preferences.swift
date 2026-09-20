@@ -46,6 +46,7 @@ enum AppInfo {
     static let issues = URL(string: "https://github.com/vankasteelj/opensubtitles-uploader/issues")!
     static let releases = URL(string: "https://github.com/vankasteelj/opensubtitles-uploader/releases")!
     static let author = URL(string: "https://github.com/vankasteelj")!
+    static let macAuthor = URL(string: "https://github.com/drzaphod85")!
     static let transifex = URL(string: "https://www.transifex.com/vankasteelj/opensubtitles-uploader-nwjs/")!
     static let tutorial = URL(string: "https://www.youtube.com/watch?v=jrIgL8kwBdI")!
 }

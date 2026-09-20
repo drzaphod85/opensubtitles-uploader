@@ -62,6 +62,7 @@ EXTRA = {
     "Install mediainfo or ffprobe (e.g. with Homebrew) to read duration and frame rate from this file type.": "Install mediainfo or ffprobe (e.g. with Homebrew) to read duration and frame rate from this file type.",
     "IMDb id is locked and was kept. Detected: %@": "IMDb id is locked and was kept. Detected: %@",
     "Identification": "Identification",
+    "macOS version by": "macOS version by",
 }
 
 def esc(s):

@@ -11,6 +11,10 @@ and native alerts and notifications.
 
 Requires macOS 14 (Sonoma) or later. Universal binary (Apple silicon + Intel).
 
+Original application by [Jean van Kasteel (vankasteelj)](https://github.com/vankasteelj).
+macOS version by [Lasse L (drzaphod85)](https://github.com/drzaphod85). Both are
+licensed under the GPL-3.0, see [LICENSE](../LICENSE).
+
 ## What is reused from the original
 
 - The OpenSubtitles XML-RPC protocol (`LogIn`, `CheckMovieHash`,

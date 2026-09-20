@@ -104,9 +104,15 @@ struct AboutSettingsView: View {
                 .frame(width: 96, height: 96)
             Text("OpenSubtitles Uploader").font(.title2.bold())
             Text(L("Version %@", AppInfo.version)).foregroundStyle(.secondary)
-            HStack(spacing: 4) {
-                Text(L("developed by"))
-                Button("vankasteelj") { state.openExternal(AppInfo.author) }.buttonStyle(.link)
+            VStack(spacing: 2) {
+                HStack(spacing: 4) {
+                    Text(L("developed by"))
+                    Button("vankasteelj") { state.openExternal(AppInfo.author) }.buttonStyle(.link)
+                }
+                HStack(spacing: 4) {
+                    Text(L("macOS version by"))
+                    Button("Lasse L (drzaphod85)") { state.openExternal(AppInfo.macAuthor) }.buttonStyle(.link)
+                }
             }
             .font(.callout)
             HStack(spacing: 16) {

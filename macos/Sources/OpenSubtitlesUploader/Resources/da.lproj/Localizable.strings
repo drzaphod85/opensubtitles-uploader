@@ -132,3 +132,4 @@
 "Install mediainfo or ffprobe (e.g. with Homebrew) to read duration and frame rate from this file type." = "Installér mediainfo eller ffprobe (f.eks. via Homebrew) for at læse varighed og billedhastighed fra denne filtype.";
 "IMDb id is locked and was kept. Detected: %@" = "IMDb-id er låst og blev bevaret. Fundet: %@";
 "Identification" = "Identifikation";
+"macOS version by" = "macOS-version af";

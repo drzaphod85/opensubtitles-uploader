@@ -43,5 +43,6 @@
 	"Video could not be identified by OpenSubtitles. Metadata was read from the file; set the IMDb id manually.": "Videoen kunne ikke identifiseres av OpenSubtitles. Metadata ble lest fra filen; angi IMDb-id manuelt.",
 	"Install mediainfo or ffprobe (e.g. with Homebrew) to read duration and frame rate from this file type.": "Installer mediainfo eller ffprobe (f.eks. via Homebrew) for å lese varighet og bildefrekvens fra denne filtypen.",
 	"IMDb id is locked and was kept. Detected: %@": "IMDb-id er låst og ble beholdt. Funnet: %@",
-	"Identification": "Identifisering"
+	"Identification": "Identifisering",
+	"macOS version by": "macOS-versjon av"
 }
