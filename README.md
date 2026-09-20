@@ -25,8 +25,8 @@ Confused? Wondering how to use it? Watch the [tutorial video](http://www.youtube
 - Q: I'm using Linux, where can I use the app?
   - A: I'm no longer actively maintaining linux builds due to limited time available. You can try to build the application yourself (see below how) and report on improvements/enhancements needed in order to ship those binaries as well in the future.
 
-- Q: I'm using OSX, can I use the app?
-  - A: You could try to build the OSX x64 (for Intel) and emulate it on Apple Silicon or try to build manually the app with the compatible nwjs binaries alongside node_modules and this repo files. 
+- Q: I'm using macOS, can I use the app?
+  - A: Yes, there is a native macOS version (Swift/SwiftUI, Apple Silicon and Intel, macOS 14 or later) in the [`macos/`](macos/) folder. It uses the same OpenSubtitles API, translations and heuristics as this app. See [macos/README.md](macos/README.md) for the download/build instructions.
 
 ## Get involved
 Here's a few easy ways of getting involved with the project:
