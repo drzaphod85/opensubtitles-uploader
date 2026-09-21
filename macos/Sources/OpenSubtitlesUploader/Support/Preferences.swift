@@ -40,13 +40,20 @@ extension UserDefaults {
 }
 
 enum AppInfo {
-    static let version = "2.8.0"
-    static let userAgent = "OpenSubtitles-Uploader v\(version)"
-    static let homepage = URL(string: "https://github.com/vankasteelj/opensubtitles-uploader")!
-    static let issues = URL(string: "https://github.com/vankasteelj/opensubtitles-uploader/issues")!
-    static let releases = URL(string: "https://github.com/vankasteelj/opensubtitles-uploader/releases")!
-    static let author = URL(string: "https://github.com/vankasteelj")!
+    /// Version of the Mac app. Numbered independently of the HTML5 app, as agreed with its author.
+    static let version = "1.0.0"
+    /// Own user agent, so OpenSubtitles can tell the two apps apart (see upstream issue #130).
+    static let userAgent = "OpenSubtitles-Uploader-Mac v\(version)"
+    static let bundleIdentifier = "io.github.drzaphod85.opensubtitles-uploader"
+
+    static let homepage = URL(string: "https://github.com/drzaphod85/opensubtitles-uploader")!
+    static let issues = URL(string: "https://github.com/drzaphod85/opensubtitles-uploader/issues")!
+    static let releases = URL(string: "https://github.com/drzaphod85/opensubtitles-uploader/releases")!
+    static let latestReleaseAPI = URL(string: "https://api.github.com/repos/drzaphod85/opensubtitles-uploader/releases/latest")!
     static let macAuthor = URL(string: "https://github.com/drzaphod85")!
+
+    static let originalProject = URL(string: "https://github.com/vankasteelj/opensubtitles-uploader")!
+    static let author = URL(string: "https://github.com/vankasteelj")!
     static let transifex = URL(string: "https://www.transifex.com/vankasteelj/opensubtitles-uploader-nwjs/")!
     static let tutorial = URL(string: "https://www.youtube.com/watch?v=jrIgL8kwBdI")!
 }

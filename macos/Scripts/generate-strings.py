@@ -63,6 +63,8 @@ EXTRA = {
     "IMDb id is locked and was kept. Detected: %@": "IMDb id is locked and was kept. Detected: %@",
     "Identification": "Identification",
     "macOS version by": "macOS version by",
+    "Original project": "Original project",
+    "Search is unavailable in this build (no TMDB API key).": "Search is unavailable in this build (no TMDB API key).",
 }
 
 def esc(s):

@@ -1,13 +1,19 @@
-# OpenSubtitles Uploader for macOS
+# OpenSubtitles Uploader for Mac
 
-A native macOS version of OpenSubtitles Uploader, written in Swift and SwiftUI.
-It offers the same workflow as the HTML5/NW.js application — drop a video and a
-subtitle, check the detected metadata, press **Upload** — but behaves like a
-proper Mac app: standard menu bar and keyboard shortcuts, Finder drag & drop
-(including onto the Dock icon and *Open With…*), native open panels, a
-Settings window (⌘,), system light/dark appearance, per-app language selection
-in *System Settings › Language & Region*, password stored in the Keychain,
+A native macOS app for uploading subtitles to [OpenSubtitles.org](https://www.opensubtitles.org),
+written in Swift and SwiftUI. It is based on Jean van Kasteel's
+[OpenSubtitles Uploader](https://github.com/vankasteelj/opensubtitles-uploader) (HTML5/NW.js)
+and offers the same workflow — drop a video and a subtitle, check the detected metadata,
+press **Upload** — but behaves like a proper Mac app: standard menu bar and keyboard
+shortcuts, Finder drag & drop (including onto the Dock icon and *Open With…*), native
+open panels, a Settings window (⌘,), system light/dark appearance, per-app language
+selection in *System Settings › Language & Region*, password stored in the Keychain,
 and native alerts and notifications.
+
+As agreed with the original author ([issue #130](https://github.com/vankasteelj/opensubtitles-uploader/issues/130)),
+the Mac app is maintained here, in this fork, with its own version numbers, its own
+OpenSubtitles user agent (`OpenSubtitles-Uploader-Mac`) and its own API keys. The
+HTML5 app is not affected by anything in the `macos/` folder.
 
 Requires macOS 14 (Sonoma) or later. Universal binary (Apple silicon + Intel).
 
@@ -20,11 +26,10 @@ licensed under the GPL-3.0, see [LICENSE](../LICENSE).
 - The OpenSubtitles XML-RPC protocol (`LogIn`, `CheckMovieHash`,
   `GetIMDBMovieDetails`, `GuessMovieFromString`, `TryUploadSubtitles`,
   `UploadSubtitles`) is a direct port of the `opensubtitles-api` module,
-  including the OSDb hash, MD5 and the zlib+base64 subtitle payload. The same
-  registered user agent (`OpenSubtitles-Uploader v2.8.0`) is used.
+  including the OSDb hash, MD5 and the zlib+base64 subtitle payload.
 - TMDB for the title search and the backdrop image (the Trakt.tv key used by the
-  HTML5 version has been revoked and answers 403 Forbidden), GitHub
-  `package.json` for the weekly update check.
+  HTML5 version has been revoked and answers 403 Forbidden). Updates are checked
+  against the GitHub releases of this fork.
 - All translations (`app/localization/*.json`) are converted to
   `.lproj/Localizable.strings` with `Scripts/generate-strings.py`.
 - The subtitle language list (`os-lang.json`) and the app icon.
@@ -66,6 +71,18 @@ Norwegian (Bokmål) and Icelandic; those four JSON files are proposed for
 `app/localization/` in a separate pull request so the HTML5 version can use
 them too. The strings that only exist in the Mac UI are translated in
 `macos/Localization/`.
+
+## API keys and user agent
+
+- **TMDB.** The title search and the backdrop image need a TMDB API key. The key is
+  not in the repository: get a free one at https://www.themoviedb.org/settings/api
+  and put it in `Sources/OpenSubtitlesUploader/Support/APIKeys.swift` before building
+  a release. Without it the app works, but the search sheet says so and no backdrop
+  is shown.
+- **OpenSubtitles user agent.** The app identifies itself as
+  `OpenSubtitles-Uploader-Mac v<version>` (`AppInfo.userAgent`). OpenSubtitles asks
+  developers to register user agents; see their
+  [developer page](https://trac.opensubtitles.org/projects/opensubtitles/wiki/DevReadFirst).
 
 ## Building
 
@@ -109,7 +126,7 @@ xcrun notarytool submit build/OpenSubtitles-Uploader-2.8.0-macOS.dmg --keychain-
 ## Troubleshooting
 
 - The app writes a log to `~/Library/Logs/OpenSubtitles Uploader/app.log`
-  (also visible in Console.app under the subsystem `org.opensubtitles.uploader`).
+  (also visible in Console.app under the subsystem `io.github.drzaphod85.opensubtitles-uploader`).
   Attach it when reporting an issue.
 - The first launch of a freshly built, unnotarized bundle can take 15–30 s while
   macOS verifies the binary; later launches are instant. An ad hoc signed build

@@ -4,14 +4,14 @@ import os
 /// Lightweight logging: unified log (Console.app) plus a plain text file in
 /// ~/Library/Logs/OpenSubtitles Uploader/app.log that users can attach to bug reports.
 enum AppLog {
-    private static let logger = Logger(subsystem: "org.opensubtitles.uploader", category: "app")
+    private static let logger = Logger(subsystem: AppInfo.bundleIdentifier, category: "app")
     static let fileURL: URL = {
         let dir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/Logs/OpenSubtitles Uploader", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("app.log")
     }()
-    private static let queue = DispatchQueue(label: "org.opensubtitles.uploader.log")
+    private static let queue = DispatchQueue(label: AppInfo.bundleIdentifier + ".log")
     private static let formatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

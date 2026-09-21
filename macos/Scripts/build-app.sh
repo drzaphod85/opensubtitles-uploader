@@ -61,7 +61,7 @@ find "$APP" -name .DS_Store -delete
 xattr -cr "$APP"
 
 echo "▸ Signing (ad hoc)"
-codesign --force --deep --sign - --identifier org.opensubtitles.uploader "$APP"
+codesign --force --deep --sign - --identifier io.github.drzaphod85.opensubtitles-uploader "$APP"
 codesign --verify --deep --strict "$APP"
 
 FINAL="$ROOT/build/$NAME.app"

@@ -133,3 +133,5 @@
 "IMDb id is locked and was kept. Detected: %@" = "IMDb-id är låst och behölls. Upptäckt: %@";
 "Identification" = "Identifiering";
 "macOS version by" = "macOS-version av";
+"Original project" = "Ursprungligt projekt";
+"Search is unavailable in this build (no TMDB API key)." = "Sökning är inte tillgänglig i den här versionen (ingen TMDB-API-nyckel).";

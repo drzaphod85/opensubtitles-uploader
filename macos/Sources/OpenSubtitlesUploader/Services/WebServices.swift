@@ -14,7 +14,7 @@ struct SearchResult: Identifiable, Hashable {
 /// The Movie Database. Used for the title search (the Trakt.tv key of the HTML5 version has
 /// been revoked and answers 403) and for the backdrop image of the video section.
 enum TMDBClient {
-    static let apiKey = "27075282e39eea76bd9626ee5d3e767b"
+    static var apiKey: String { APIKeys.tmdb }
     static let imageBase = "https://image.tmdb.org/t/p/w1280"
 
     private static func url(_ path: String, _ query: [String: String] = [:]) -> URL {
@@ -43,6 +43,7 @@ enum TMDBClient {
     /// Searches movies and TV shows. When a season/episode is known (from the video file name),
     /// the matching episode of each show is offered as well, with its own IMDb id.
     static func search(_ query: String, seasonEpisode: (season: Int, episode: Int)? = nil) async -> [SearchResult] {
+        guard APIKeys.hasTMDB else { return [] }
         guard let json = await fetchJSON(url("search/multi", ["query": query, "include_adult": "false"])),
               let items = json["results"] as? [[String: Any]] else { return [] }
 
@@ -92,6 +93,7 @@ enum TMDBClient {
     // MARK: Backdrop
 
     static func backdrop(imdbId: String, fallbackTitle: String?) async -> URL? {
+        guard APIKeys.hasTMDB else { return nil }
         if let url = await find(imdbId: imdbId) { return url }
         if let title = fallbackTitle { return await search(title: title) }
         return nil
@@ -117,21 +119,24 @@ enum TMDBClient {
     }
 }
 
-/// Checks the upstream package.json for a newer version, at most once a week.
+/// Checks the latest GitHub release of the Mac app, at most once a week.
 enum UpdateChecker {
     struct Update {
         let version: String
         let url: URL
     }
 
-    static let packageURL = URL(string: "https://raw.githubusercontent.com/vankasteelj/opensubtitles-uploader/master/package.json")!
-
     static func fetchLatest() async throws -> Update? {
-        let (data, _) = try await URLSession.shared.data(from: packageURL)
+        var request = URLRequest(url: AppInfo.latestReleaseAPI)
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue(AppInfo.userAgent, forHTTPHeaderField: "User-Agent")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode == 404 { return nil } // no release yet
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let version = json["version"] as? String else { return nil }
-        let releases = (json["releases"] as? String).flatMap(URL.init(string:)) ?? AppInfo.releases
-        return isNewer(version, than: AppInfo.version) ? Update(version: version, url: releases) : nil
+              let tag = json["tag_name"] as? String else { return nil }
+        let version = tag.replacingOccurrences(of: #"^[^\d]*"#, with: "", options: .regularExpression) // "v1.2.0" / "mac-1.2.0" → "1.2.0"
+        let url = (json["html_url"] as? String).flatMap(URL.init(string:)) ?? AppInfo.releases
+        return isNewer(version, than: AppInfo.version) ? Update(version: version, url: url) : nil
     }
 
     static func isNewer(_ a: String, than b: String) -> Bool {

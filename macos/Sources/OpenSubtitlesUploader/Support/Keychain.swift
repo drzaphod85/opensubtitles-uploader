@@ -4,7 +4,7 @@ import Security
 /// Minimal Keychain wrapper used to store the OpenSubtitles password securely,
 /// the way Mac users expect (the HTML5 version kept it in localStorage).
 enum Keychain {
-    static let service = "org.opensubtitles.uploader"
+    static let service = AppInfo.bundleIdentifier
 
     static func save(password: String, account: String) {
         delete(account: account)

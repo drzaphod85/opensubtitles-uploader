@@ -44,5 +44,7 @@
 	"Install mediainfo or ffprobe (e.g. with Homebrew) to read duration and frame rate from this file type.": "Installer mediainfo eller ffprobe (f.eks. via Homebrew) for å lese varighet og bildefrekvens fra denne filtypen.",
 	"IMDb id is locked and was kept. Detected: %@": "IMDb-id er låst og ble beholdt. Funnet: %@",
 	"Identification": "Identifisering",
-	"macOS version by": "macOS-versjon av"
+	"macOS version by": "macOS-versjon av",
+	"Original project": "Opprinnelig prosjekt",
+	"Search is unavailable in this build (no TMDB API key).": "Søk er ikke tilgjengelig i denne versjonen (ingen TMDB-API-nøkkel)."
 }

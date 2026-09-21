@@ -133,3 +133,5 @@
 "IMDb id is locked and was kept. Detected: %@" = "IMDb-auðkennið er læst og var haldið. Fannst: %@";
 "Identification" = "Auðkenning";
 "macOS version by" = "macOS-útgáfa eftir";
+"Original project" = "Upprunalegt verkefni";
+"Search is unavailable in this build (no TMDB API key)." = "Leit er ekki í boði í þessari útgáfu (enginn TMDB API-lykill).";

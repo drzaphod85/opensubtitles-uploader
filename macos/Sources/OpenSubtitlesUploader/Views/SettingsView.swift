@@ -118,6 +118,7 @@ struct AboutSettingsView: View {
             HStack(spacing: 16) {
                 Button(L("Source code on GitHub")) { state.openExternal(AppInfo.homepage) }
                 Button(L("Report an issue")) { state.openExternal(AppInfo.issues) }
+                Button(L("Original project")) { state.openExternal(AppInfo.originalProject) }
             }
             .buttonStyle(.link)
             Text("GPL-3.0").font(.caption).foregroundStyle(.tertiary)

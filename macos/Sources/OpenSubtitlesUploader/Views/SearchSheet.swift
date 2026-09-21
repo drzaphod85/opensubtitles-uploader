@@ -32,7 +32,9 @@ struct SearchSheet: View {
             }
             .frame(minHeight: 220)
             .overlay {
-                if state.searchPerformed && state.searchResults.isEmpty && !state.isSearching {
+                if !APIKeys.hasTMDB {
+                    ContentUnavailableView(L("Search is unavailable in this build (no TMDB API key)."), systemImage: "key.slash")
+                } else if state.searchPerformed && state.searchResults.isEmpty && !state.isSearching {
                     ContentUnavailableView(L("Not found"), systemImage: "film")
                 }
             }
