@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>OpenSubtitles Uploader</string>
+	<key>CFBundleExecutable</key>
+	<string>OpenSubtitlesUploader</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.drzaphod85.opensubtitles-uploader</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>OpenSubtitles Uploader</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>__VERSION__</string>
+	<key>CFBundleVersion</key>
+	<string>__VERSION__</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string><string>ar</string><string>el</string><string>de</string><string>es</string><string>eu</string><string>fa</string><string>fi</string>
+		<string>fr</string><string>hi</string><string>it</string><string>nl</string><string>pl</string><string>pt</string>
+		<string>pt-BR</string><string>ro</string><string>sk</string><string>tr</string><string>uk</string><string>zh-Hans</string>
+		<string>sv</string><string>da</string><string>nb</string><string>is</string>
+	</array>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>© Jean van Kasteel (original app), Lasse L (macOS version). GPL-3.0.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- The "Use HTTPS" setting can be turned off; allow plain HTTP for the API host only. -->
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>api.opensubtitles.org</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Video file</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.movie</string>
+				<string>public.video</string>
+				<string>public.mpeg-4</string>
+				<string>com.apple.quicktime-movie</string>
+				<string>public.avi</string>
+				<string>org.matroska.mkv</string>
+			</array>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>3g2</string><string>3gp</string><string>3gp2</string><string>3gpp</string><string>60d</string><string>ajp</string><string>asf</string><string>asx</string><string>avchd</string><string>avi</string><string>bik</string><string>bix</string><string>box</string><string>cam</string><string>dat</string><string>divx</string><string>dmf</string><string>dv</string><string>dvr-ms</string><string>evo</string><string>flc</string><string>fli</string><string>flic</string><string>flv</string><string>flx</string><string>gvi</string><string>gvp</string><string>h264</string><string>m1v</string><string>m2p</string><string>m2ts</string><string>m2v</string><string>m4e</string><string>m4v</string><string>mjp</string><string>mjpeg</string><string>mjpg</string><string>mkv</string><string>moov</string><string>mov</string><string>movhd</string><string>movie</string><string>movx</string><string>mp4</string><string>mpe</string><string>mpeg</string><string>mpg</string><string>mpv</string><string>mpv2</string><string>mxf</string><string>nsv</string><string>nut</string><string>ogg</string><string>ogm</string><string>omf</string><string>ps</string><string>qt</string><string>ram</string><string>rm</string><string>rmvb</string><string>swf</string><string>ts</string><string>vfw</string><string>vid</string><string>video</string><string>viv</string><string>vivo</string><string>vob</string><string>vro</string><string>wm</string><string>wmv</string><string>wmx</string><string>wrap</string><string>wvx</string><string>wx</string><string>x264</string><string>xvid</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Subtitle file</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>srt</string><string>sub</string><string>smi</string><string>txt</string><string>ssa</string><string>ass</string><string>mpl</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

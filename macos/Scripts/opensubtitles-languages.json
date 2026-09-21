@@ -1,0 +1,567 @@
+[
+  {
+    "ISO639" : "ab",
+    "LanguageName" : "Abkhazian",
+    "SubLanguageID" : "abk"
+  },
+  {
+    "ISO639" : "af",
+    "LanguageName" : "Afrikaans",
+    "SubLanguageID" : "afr"
+  },
+  {
+    "ISO639" : "sq",
+    "LanguageName" : "Albanian",
+    "SubLanguageID" : "alb"
+  },
+  {
+    "ISO639" : "am",
+    "LanguageName" : "Amharic",
+    "SubLanguageID" : "amh"
+  },
+  {
+    "ISO639" : "ar",
+    "LanguageName" : "Arabic",
+    "SubLanguageID" : "ara"
+  },
+  {
+    "ISO639" : "an",
+    "LanguageName" : "Aragonese",
+    "SubLanguageID" : "arg"
+  },
+  {
+    "ISO639" : "hy",
+    "LanguageName" : "Armenian",
+    "SubLanguageID" : "arm"
+  },
+  {
+    "ISO639" : "as",
+    "LanguageName" : "Assamese",
+    "SubLanguageID" : "asm"
+  },
+  {
+    "ISO639" : "at",
+    "LanguageName" : "Asturian",
+    "SubLanguageID" : "ast"
+  },
+  {
+    "ISO639" : "az",
+    "LanguageName" : "Azerbaijani",
+    "SubLanguageID" : "aze"
+  },
+  {
+    "ISO639" : "eu",
+    "LanguageName" : "Basque",
+    "SubLanguageID" : "baq"
+  },
+  {
+    "ISO639" : "be",
+    "LanguageName" : "Belarusian",
+    "SubLanguageID" : "bel"
+  },
+  {
+    "ISO639" : "bn",
+    "LanguageName" : "Bengali",
+    "SubLanguageID" : "ben"
+  },
+  {
+    "ISO639" : "bs",
+    "LanguageName" : "Bosnian",
+    "SubLanguageID" : "bos"
+  },
+  {
+    "ISO639" : "br",
+    "LanguageName" : "Breton",
+    "SubLanguageID" : "bre"
+  },
+  {
+    "ISO639" : "bg",
+    "LanguageName" : "Bulgarian",
+    "SubLanguageID" : "bul"
+  },
+  {
+    "ISO639" : "my",
+    "LanguageName" : "Burmese",
+    "SubLanguageID" : "bur"
+  },
+  {
+    "ISO639" : "ca",
+    "LanguageName" : "Catalan",
+    "SubLanguageID" : "cat"
+  },
+  {
+    "ISO639" : "zc",
+    "LanguageName" : "Chinese (Cantonese)",
+    "SubLanguageID" : "zhc"
+  },
+  {
+    "ISO639" : "zh",
+    "LanguageName" : "Chinese (simplified)",
+    "SubLanguageID" : "chi"
+  },
+  {
+    "ISO639" : "zt",
+    "LanguageName" : "Chinese (traditional)",
+    "SubLanguageID" : "zht"
+  },
+  {
+    "ISO639" : "ze",
+    "LanguageName" : "Chinese bilingual",
+    "SubLanguageID" : "zhe"
+  },
+  {
+    "ISO639" : "cv",
+    "LanguageName" : "Chuvash",
+    "SubLanguageID" : "chv"
+  },
+  {
+    "ISO639" : "hr",
+    "LanguageName" : "Croatian",
+    "SubLanguageID" : "hrv"
+  },
+  {
+    "ISO639" : "cs",
+    "LanguageName" : "Czech",
+    "SubLanguageID" : "cze"
+  },
+  {
+    "ISO639" : "da",
+    "LanguageName" : "Danish",
+    "SubLanguageID" : "dan"
+  },
+  {
+    "ISO639" : "pr",
+    "LanguageName" : "Dari",
+    "SubLanguageID" : "prs"
+  },
+  {
+    "ISO639" : "nl",
+    "LanguageName" : "Dutch",
+    "SubLanguageID" : "dut"
+  },
+  {
+    "ISO639" : "en",
+    "LanguageName" : "English",
+    "SubLanguageID" : "eng"
+  },
+  {
+    "ISO639" : "eo",
+    "LanguageName" : "Esperanto",
+    "SubLanguageID" : "epo"
+  },
+  {
+    "ISO639" : "et",
+    "LanguageName" : "Estonian",
+    "SubLanguageID" : "est"
+  },
+  {
+    "ISO639" : "ex",
+    "LanguageName" : "Extremaduran",
+    "SubLanguageID" : "ext"
+  },
+  {
+    "ISO639" : "fi",
+    "LanguageName" : "Finnish",
+    "SubLanguageID" : "fin"
+  },
+  {
+    "ISO639" : "fr",
+    "LanguageName" : "French",
+    "SubLanguageID" : "fre"
+  },
+  {
+    "ISO639" : "gd",
+    "LanguageName" : "Gaelic",
+    "SubLanguageID" : "gla"
+  },
+  {
+    "ISO639" : "gl",
+    "LanguageName" : "Galician",
+    "SubLanguageID" : "glg"
+  },
+  {
+    "ISO639" : "ka",
+    "LanguageName" : "Georgian",
+    "SubLanguageID" : "geo"
+  },
+  {
+    "ISO639" : "de",
+    "LanguageName" : "German",
+    "SubLanguageID" : "ger"
+  },
+  {
+    "ISO639" : "el",
+    "LanguageName" : "Greek",
+    "SubLanguageID" : "ell"
+  },
+  {
+    "ISO639" : "he",
+    "LanguageName" : "Hebrew",
+    "SubLanguageID" : "heb"
+  },
+  {
+    "ISO639" : "hi",
+    "LanguageName" : "Hindi",
+    "SubLanguageID" : "hin"
+  },
+  {
+    "ISO639" : "hu",
+    "LanguageName" : "Hungarian",
+    "SubLanguageID" : "hun"
+  },
+  {
+    "ISO639" : "is",
+    "LanguageName" : "Icelandic",
+    "SubLanguageID" : "ice"
+  },
+  {
+    "ISO639" : "ig",
+    "LanguageName" : "Igbo",
+    "SubLanguageID" : "ibo"
+  },
+  {
+    "ISO639" : "id",
+    "LanguageName" : "Indonesian",
+    "SubLanguageID" : "ind"
+  },
+  {
+    "ISO639" : "ia",
+    "LanguageName" : "Interlingua",
+    "SubLanguageID" : "ina"
+  },
+  {
+    "ISO639" : "ga",
+    "LanguageName" : "Irish",
+    "SubLanguageID" : "gle"
+  },
+  {
+    "ISO639" : "it",
+    "LanguageName" : "Italian",
+    "SubLanguageID" : "ita"
+  },
+  {
+    "ISO639" : "ja",
+    "LanguageName" : "Japanese",
+    "SubLanguageID" : "jpn"
+  },
+  {
+    "ISO639" : "je",
+    "LanguageName" : "Japanese bilingual",
+    "SubLanguageID" : "jpe"
+  },
+  {
+    "ISO639" : "kn",
+    "LanguageName" : "Kannada",
+    "SubLanguageID" : "kan"
+  },
+  {
+    "ISO639" : "kk",
+    "LanguageName" : "Kazakh",
+    "SubLanguageID" : "kaz"
+  },
+  {
+    "ISO639" : "km",
+    "LanguageName" : "Khmer",
+    "SubLanguageID" : "khm"
+  },
+  {
+    "ISO639" : "ko",
+    "LanguageName" : "Korean",
+    "SubLanguageID" : "kor"
+  },
+  {
+    "ISO639" : "ku",
+    "LanguageName" : "Kurdish",
+    "SubLanguageID" : "kur"
+  },
+  {
+    "ISO639" : "ky",
+    "LanguageName" : "Kyrgyz",
+    "SubLanguageID" : "kir"
+  },
+  {
+    "ISO639" : "lo",
+    "LanguageName" : "Lao",
+    "SubLanguageID" : "lao"
+  },
+  {
+    "ISO639" : "lv",
+    "LanguageName" : "Latvian",
+    "SubLanguageID" : "lav"
+  },
+  {
+    "ISO639" : "lt",
+    "LanguageName" : "Lithuanian",
+    "SubLanguageID" : "lit"
+  },
+  {
+    "ISO639" : "lb",
+    "LanguageName" : "Luxembourgish",
+    "SubLanguageID" : "ltz"
+  },
+  {
+    "ISO639" : "mk",
+    "LanguageName" : "Macedonian",
+    "SubLanguageID" : "mac"
+  },
+  {
+    "ISO639" : "ms",
+    "LanguageName" : "Malay",
+    "SubLanguageID" : "may"
+  },
+  {
+    "ISO639" : "ml",
+    "LanguageName" : "Malayalam",
+    "SubLanguageID" : "mal"
+  },
+  {
+    "ISO639" : "ma",
+    "LanguageName" : "Manipuri",
+    "SubLanguageID" : "mni"
+  },
+  {
+    "ISO639" : "mr",
+    "LanguageName" : "Marathi",
+    "SubLanguageID" : "mar"
+  },
+  {
+    "ISO639" : "mn",
+    "LanguageName" : "Mongolian",
+    "SubLanguageID" : "mon"
+  },
+  {
+    "ISO639" : "me",
+    "LanguageName" : "Montenegrin",
+    "SubLanguageID" : "mne"
+  },
+  {
+    "ISO639" : "nv",
+    "LanguageName" : "Navajo",
+    "SubLanguageID" : "nav"
+  },
+  {
+    "ISO639" : "ne",
+    "LanguageName" : "Nepali",
+    "SubLanguageID" : "nep"
+  },
+  {
+    "ISO639" : "se",
+    "LanguageName" : "Northern Sami",
+    "SubLanguageID" : "sme"
+  },
+  {
+    "ISO639" : "no",
+    "LanguageName" : "Norwegian",
+    "SubLanguageID" : "nor"
+  },
+  {
+    "ISO639" : "oc",
+    "LanguageName" : "Occitan",
+    "SubLanguageID" : "oci"
+  },
+  {
+    "ISO639" : "or",
+    "LanguageName" : "Odia",
+    "SubLanguageID" : "ori"
+  },
+  {
+    "ISO639" : "fa",
+    "LanguageName" : "Persian",
+    "SubLanguageID" : "per"
+  },
+  {
+    "ISO639" : "pl",
+    "LanguageName" : "Polish",
+    "SubLanguageID" : "pol"
+  },
+  {
+    "ISO639" : "pt",
+    "LanguageName" : "Portuguese",
+    "SubLanguageID" : "por"
+  },
+  {
+    "ISO639" : "pb",
+    "LanguageName" : "Portuguese (BR)",
+    "SubLanguageID" : "pob"
+  },
+  {
+    "ISO639" : "pm",
+    "LanguageName" : "Portuguese (MZ)",
+    "SubLanguageID" : "pom"
+  },
+  {
+    "ISO639" : "ps",
+    "LanguageName" : "Pushto",
+    "SubLanguageID" : "pus"
+  },
+  {
+    "ISO639" : "rk",
+    "LanguageName" : "Rakhine",
+    "SubLanguageID" : "rki"
+  },
+  {
+    "ISO639" : "ro",
+    "LanguageName" : "Romanian",
+    "SubLanguageID" : "rum"
+  },
+  {
+    "ISO639" : "ru",
+    "LanguageName" : "Russian",
+    "SubLanguageID" : "rus"
+  },
+  {
+    "ISO639" : "sx",
+    "LanguageName" : "Santali",
+    "SubLanguageID" : "sat"
+  },
+  {
+    "ISO639" : "sr",
+    "LanguageName" : "Serbian",
+    "SubLanguageID" : "scc"
+  },
+  {
+    "ISO639" : "sd",
+    "LanguageName" : "Sindhi",
+    "SubLanguageID" : "snd"
+  },
+  {
+    "ISO639" : "si",
+    "LanguageName" : "Sinhalese",
+    "SubLanguageID" : "sin"
+  },
+  {
+    "ISO639" : "sk",
+    "LanguageName" : "Slovak",
+    "SubLanguageID" : "slo"
+  },
+  {
+    "ISO639" : "sl",
+    "LanguageName" : "Slovenian",
+    "SubLanguageID" : "slv"
+  },
+  {
+    "ISO639" : "so",
+    "LanguageName" : "Somali",
+    "SubLanguageID" : "som"
+  },
+  {
+    "ISO639" : "sb",
+    "LanguageName" : "Sorbian languages",
+    "SubLanguageID" : "wen"
+  },
+  {
+    "ISO639" : "aj",
+    "LanguageName" : "South Azerbaijani",
+    "SubLanguageID" : "azb"
+  },
+  {
+    "ISO639" : "es",
+    "LanguageName" : "Spanish",
+    "SubLanguageID" : "spa"
+  },
+  {
+    "ISO639" : "sp",
+    "LanguageName" : "Spanish (EU)",
+    "SubLanguageID" : "spn"
+  },
+  {
+    "ISO639" : "ea",
+    "LanguageName" : "Spanish (LA)",
+    "SubLanguageID" : "spl"
+  },
+  {
+    "ISO639" : "zg",
+    "LanguageName" : "Standard Moroccan Amazigh",
+    "SubLanguageID" : "zgh"
+  },
+  {
+    "ISO639" : "sw",
+    "LanguageName" : "Swahili",
+    "SubLanguageID" : "swa"
+  },
+  {
+    "ISO639" : "sv",
+    "LanguageName" : "Swedish",
+    "SubLanguageID" : "swe"
+  },
+  {
+    "ISO639" : "sy",
+    "LanguageName" : "Syriac",
+    "SubLanguageID" : "syr"
+  },
+  {
+    "ISO639" : "tl",
+    "LanguageName" : "Tagalog",
+    "SubLanguageID" : "tgl"
+  },
+  {
+    "ISO639" : "ta",
+    "LanguageName" : "Tamil",
+    "SubLanguageID" : "tam"
+  },
+  {
+    "ISO639" : "tt",
+    "LanguageName" : "Tatar",
+    "SubLanguageID" : "tat"
+  },
+  {
+    "ISO639" : "te",
+    "LanguageName" : "Telugu",
+    "SubLanguageID" : "tel"
+  },
+  {
+    "ISO639" : "tm",
+    "LanguageName" : "Tetum",
+    "SubLanguageID" : "tet"
+  },
+  {
+    "ISO639" : "th",
+    "LanguageName" : "Thai",
+    "SubLanguageID" : "tha"
+  },
+  {
+    "ISO639" : "tp",
+    "LanguageName" : "Toki Pona",
+    "SubLanguageID" : "tok"
+  },
+  {
+    "ISO639" : "tr",
+    "LanguageName" : "Turkish",
+    "SubLanguageID" : "tur"
+  },
+  {
+    "ISO639" : "tk",
+    "LanguageName" : "Turkmen",
+    "SubLanguageID" : "tuk"
+  },
+  {
+    "ISO639" : "uk",
+    "LanguageName" : "Ukrainian",
+    "SubLanguageID" : "ukr"
+  },
+  {
+    "ISO639" : "ur",
+    "LanguageName" : "Urdu",
+    "SubLanguageID" : "urd"
+  },
+  {
+    "ISO639" : "uz",
+    "LanguageName" : "Uzbek",
+    "SubLanguageID" : "uzb"
+  },
+  {
+    "ISO639" : "vi",
+    "LanguageName" : "Vietnamese",
+    "SubLanguageID" : "vie"
+  },
+  {
+    "ISO639" : "cy",
+    "LanguageName" : "Welsh",
+    "SubLanguageID" : "wel"
+  },
+  {
+    "ISO639" : "zu",
+    "LanguageName" : "Zulu",
+    "SubLanguageID" : "zul"
+  }
+]
