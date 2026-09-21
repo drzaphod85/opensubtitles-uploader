@@ -33,7 +33,13 @@ struct SearchSheet: View {
             .frame(minHeight: 220)
             .overlay {
                 if !APIKeys.hasTMDB {
-                    ContentUnavailableView(L("Search is unavailable in this build (no TMDB API key)."), systemImage: "key.slash")
+                    ContentUnavailableView {
+                        Label(L("Search needs a TMDB API key"), systemImage: "key.slash")
+                    } description: {
+                        Text(L("Add your own free TMDB API key in Settings to enable the title search and the backdrop image."))
+                    } actions: {
+                        SettingsLink { Text(L("Open Settings…")) }
+                    }
                 } else if state.searchPerformed && state.searchResults.isEmpty && !state.isSearching {
                     ContentUnavailableView(L("Not found"), systemImage: "film")
                 }

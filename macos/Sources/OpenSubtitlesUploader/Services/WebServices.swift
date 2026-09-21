@@ -38,6 +38,21 @@ enum TMDBClient {
         return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
 
+    // MARK: Key validation
+
+    enum KeyCheck { case valid, invalid, unreachable }
+
+    /// Verifies a key with the cheapest TMDB endpoint. Used by the Settings window.
+    static func verify(key: String) async -> KeyCheck {
+        var components = URLComponents(string: "https://api.themoviedb.org/3/configuration")!
+        components.queryItems = [URLQueryItem(name: "api_key", value: key)]
+        var request = URLRequest(url: components.url!)
+        request.setValue(AppInfo.userAgent, forHTTPHeaderField: "User-Agent")
+        guard let (_, response) = try? await URLSession.shared.data(for: request),
+              let http = response as? HTTPURLResponse else { return .unreachable }
+        return (200..<300).contains(http.statusCode) ? .valid : .invalid
+    }
+
     // MARK: Search
 
     /// Searches movies and TV shows. When a season/episode is known (from the video file name),

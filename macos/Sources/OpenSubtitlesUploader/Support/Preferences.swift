@@ -6,6 +6,7 @@ enum PrefKey {
     static let autoUpdate = "autoUpdate"
     static let appearance = "theme"          // system | light | dark
     static let autoIdentify = "autoIdentify"  // look up the IMDb id when a video is added
+    static let tmdbApiKey = "tmdbApiKey"      // the user's own TMDB API key (v3)
     static let username = "os_user"
     static let userId = "os_id"
     static let userRank = "os_rank"

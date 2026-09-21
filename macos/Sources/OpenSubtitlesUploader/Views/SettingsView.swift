@@ -20,6 +20,9 @@ struct GeneralSettingsView: View {
     @AppStorage(PrefKey.autoUpdate) private var autoUpdate = true
     @AppStorage(PrefKey.useSSL) private var useSSL = true
     @AppStorage(PrefKey.autoIdentify) private var autoIdentify = true
+    @AppStorage(PrefKey.tmdbApiKey) private var tmdbApiKey = ""
+    @ViewState private var keyCheck: TMDBClient.KeyCheck?
+    @ViewState private var isVerifying = false
 
     var body: some View {
         Form {
@@ -40,6 +43,35 @@ struct GeneralSettingsView: View {
 
             Section(L("Identification")) {
                 Toggle(L("Look up the IMDb id automatically when a video is added"), isOn: $autoIdentify)
+            }
+
+            Section {
+                TextField(L("TMDB API key"), text: $tmdbApiKey, prompt: Text("e.g. 3f2c…"))
+                    .font(.system(.body, design: .monospaced))
+                    .autocorrectionDisabled()
+                    .onChange(of: tmdbApiKey) { _, _ in keyCheck = nil }
+                HStack {
+                    Button(L("Verify")) { verifyKey() }
+                        .disabled(tmdbApiKey.trimmingCharacters(in: .whitespaces).isEmpty || isVerifying)
+                    if isVerifying {
+                        ProgressView().controlSize(.small)
+                    } else if let keyCheck {
+                        switch keyCheck {
+                        case .valid: Label(L("The key works."), systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                        case .invalid: Label(L("TMDB rejected this key."), systemImage: "xmark.circle.fill").foregroundStyle(.red)
+                        case .unreachable: Label(L("Could not reach TMDB."), systemImage: "wifi.exclamationmark").foregroundStyle(.orange)
+                        }
+                    }
+                    Spacer()
+                    Button(L("Get a free key…")) { state.openExternal(APIKeys.tmdbSignupURL) }
+                        .buttonStyle(.link)
+                }
+            } header: {
+                Text(L("The Movie Database (TMDB)"))
+            } footer: {
+                Text(L("Used for the IMDb title search and the backdrop image. TMDB asks every user to create their own free key; without one, those two features are disabled."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
 
             Section {
@@ -65,6 +97,15 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .padding(.vertical, 8)
+    }
+
+    private func verifyKey() {
+        isVerifying = true
+        let key = tmdbApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        Task {
+            keyCheck = await TMDBClient.verify(key: key)
+            isVerifying = false
+        }
     }
 }
 

@@ -46,5 +46,15 @@
 	"Identification": "Auðkenning",
 	"macOS version by": "macOS-útgáfa eftir",
 	"Original project": "Upprunalegt verkefni",
-	"Search is unavailable in this build (no TMDB API key).": "Leit er ekki í boði í þessari útgáfu (enginn TMDB API-lykill)."
+	"TMDB API key": "TMDB API-lykill",
+	"Verify": "Staðfesta",
+	"The key works.": "Lykillinn virkar.",
+	"TMDB rejected this key.": "TMDB hafnaði lyklinum.",
+	"Could not reach TMDB.": "Náði ekki sambandi við TMDB.",
+	"Get a free key…": "Fá ókeypis lykil…",
+	"The Movie Database (TMDB)": "The Movie Database (TMDB)",
+	"Used for the IMDb title search and the backdrop image. TMDB asks every user to create their own free key; without one, those two features are disabled.": "Notað fyrir IMDb-titilleit og bakgrunnsmynd. TMDB biður hvern notanda um að búa til eigin ókeypis lykil. Án lykils eru þessir tveir eiginleikar óvirkir.",
+	"Search needs a TMDB API key": "Leitin þarf TMDB API-lykil",
+	"Add your own free TMDB API key in Settings to enable the title search and the backdrop image.": "Settu þinn eigin ókeypis TMDB API-lykil inn í Stillingar til að virkja titilleit og bakgrunnsmynd.",
+	"Open Settings…": "Opna Stillingar…"
 }

@@ -1,14 +1,17 @@
 import Foundation
 
-/// Third-party API keys. The Mac app uses its own keys, separate from the HTML5 app
-/// (agreed with its author in upstream issue #130).
+/// Third-party API keys. TMDB requires every application (and its users) to use their own
+/// key, so the key is not part of the app: the user enters it in Settings › General.
 ///
 /// TMDB is used for the title search behind the magnifier button and for the backdrop
-/// image of the video section. Without a key those two features are simply disabled;
-/// everything else works. Get a free key at https://www.themoviedb.org/settings/api
-/// and put it here before building a release.
+/// image of the video section. Without a key those two features are disabled; everything
+/// else works.
 enum APIKeys {
-    static let tmdb = ""
+    static var tmdb: String {
+        UserDefaults.standard.string(forKey: PrefKey.tmdbApiKey)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
 
     static var hasTMDB: Bool { !tmdb.isEmpty }
+
+    static let tmdbSignupURL = URL(string: "https://www.themoviedb.org/settings/api")!
 }

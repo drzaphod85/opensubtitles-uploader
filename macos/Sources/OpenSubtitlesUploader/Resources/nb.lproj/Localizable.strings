@@ -134,4 +134,14 @@
 "Identification" = "Identifisering";
 "macOS version by" = "macOS-versjon av";
 "Original project" = "Opprinnelig prosjekt";
-"Search is unavailable in this build (no TMDB API key)." = "Søk er ikke tilgjengelig i denne versjonen (ingen TMDB-API-nøkkel).";
+"TMDB API key" = "TMDB API-nøkkel";
+"Verify" = "Bekreft";
+"The key works." = "Nøkkelen fungerer.";
+"TMDB rejected this key." = "TMDB avviste nøkkelen.";
+"Could not reach TMDB." = "Kunne ikke nå TMDB.";
+"Get a free key…" = "Skaff en gratis nøkkel…";
+"The Movie Database (TMDB)" = "The Movie Database (TMDB)";
+"Used for the IMDb title search and the backdrop image. TMDB asks every user to create their own free key; without one, those two features are disabled." = "Brukes til IMDb-tittelsøket og bakgrunnsbildet. TMDB ber hver bruker om å opprette sin egen gratis nøkkel. Uten nøkkel er de to funksjonene slått av.";
+"Search needs a TMDB API key" = "Søket trenger en TMDB API-nøkkel";
+"Add your own free TMDB API key in Settings to enable the title search and the backdrop image." = "Legg inn din egen gratis TMDB API-nøkkel i Innstillinger for å slå på tittelsøket og bakgrunnsbildet.";
+"Open Settings…" = "Åpne Innstillinger…";

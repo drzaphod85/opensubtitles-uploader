@@ -64,7 +64,17 @@ EXTRA = {
     "Identification": "Identification",
     "macOS version by": "macOS version by",
     "Original project": "Original project",
-    "Search is unavailable in this build (no TMDB API key).": "Search is unavailable in this build (no TMDB API key).",
+    "TMDB API key": "TMDB API key",
+    "Verify": "Verify",
+    "The key works.": "The key works.",
+    "TMDB rejected this key.": "TMDB rejected this key.",
+    "Could not reach TMDB.": "Could not reach TMDB.",
+    "Get a free key…": "Get a free key…",
+    "The Movie Database (TMDB)": "The Movie Database (TMDB)",
+    "Used for the IMDb title search and the backdrop image. TMDB asks every user to create their own free key; without one, those two features are disabled.": "Used for the IMDb title search and the backdrop image. TMDB asks every user to create their own free key; without one, those two features are disabled.",
+    "Search needs a TMDB API key": "Search needs a TMDB API key",
+    "Add your own free TMDB API key in Settings to enable the title search and the backdrop image.": "Add your own free TMDB API key in Settings to enable the title search and the backdrop image.",
+    "Open Settings…": "Open Settings…",
 }
 
 def esc(s):

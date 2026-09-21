@@ -74,11 +74,11 @@ them too. The strings that only exist in the Mac UI are translated in
 
 ## API keys and user agent
 
-- **TMDB.** The title search and the backdrop image need a TMDB API key. The key is
-  not in the repository: get a free one at https://www.themoviedb.org/settings/api
-  and put it in `Sources/OpenSubtitlesUploader/Support/APIKeys.swift` before building
-  a release. Without it the app works, but the search sheet says so and no backdrop
-  is shown.
+- **TMDB.** The title search and the backdrop image need a TMDB API key. TMDB's terms
+  ask every user to create their own free key, so the app does not ship one: get a key
+  at https://www.themoviedb.org/settings/api and paste it into *Settings › General ›
+  The Movie Database*, where a **Verify** button checks it. Without a key the app works,
+  but the search sheet explains what is missing and no backdrop is shown.
 - **OpenSubtitles user agent.** The app identifies itself as
   `OpenSubtitles-Uploader-Mac v<version>` (`AppInfo.userAgent`). OpenSubtitles asks
   developers to register user agents; see their
