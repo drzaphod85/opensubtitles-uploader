@@ -25,14 +25,20 @@ for arg in "$@"; do
 done
 
 echo "▸ Building $NAME $VERSION ($CONFIG)…"
+# Build one slice per architecture (the --arch flags need Xcode's build system) and
+# merge them with lipo into a universal binary. Falls back to the native slice alone
+# if the other one cannot be built on this machine.
 BUILD_FLAGS=(-c "$CONFIG" --build-system native)
-if swift build "${BUILD_FLAGS[@]}" --arch arm64 --arch x86_64 2>/dev/null; then
-    BIN_DIR="$(swift build "${BUILD_FLAGS[@]}" --arch arm64 --arch x86_64 --show-bin-path)"
-else
-    echo "  (universal build not available, building for the current architecture only)"
-    swift build "${BUILD_FLAGS[@]}"
-    BIN_DIR="$(swift build "${BUILD_FLAGS[@]}" --show-bin-path)"
-fi
+SLICES=()
+for TRIPLE in arm64-apple-macosx14.0 x86_64-apple-macosx14.0; do
+    if swift build "${BUILD_FLAGS[@]}" --triple "$TRIPLE" 2>&1 | grep -vE "deprecated"; then
+        SLICES+=("$(swift build "${BUILD_FLAGS[@]}" --triple "$TRIPLE" --show-bin-path 2>/dev/null)/$EXECUTABLE")
+    else
+        echo "  (could not build $TRIPLE, skipping that slice)"
+    fi
+done
+[ "${#SLICES[@]}" -gt 0 ] || { echo "Build failed" >&2; exit 1; }
+BIN_DIR="$(dirname "${SLICES[0]}")"
 
 # Assemble and sign in a temporary folder: iCloud Drive / Finder keep re-adding extended
 # attributes (com.apple.FinderInfo) to folders under ~/Documents, which makes codesign refuse
@@ -45,7 +51,11 @@ RES="$CONTENTS/Resources"
 mkdir -p "$CONTENTS/MacOS" "$RES"
 
 echo "▸ Assembling $APP"
-cp "$BIN_DIR/$EXECUTABLE" "$CONTENTS/MacOS/$EXECUTABLE"
+if [ "${#SLICES[@]}" -gt 1 ]; then
+    lipo -create "${SLICES[@]}" -output "$CONTENTS/MacOS/$EXECUTABLE"
+else
+    cp "${SLICES[0]}" "$CONTENTS/MacOS/$EXECUTABLE"
+fi
 sed "s/__VERSION__/$VERSION/g" Info.plist > "$CONTENTS/Info.plist"
 printf 'APPL????' > "$CONTENTS/PkgInfo"
 cp Sources/OpenSubtitlesUploader/Resources/AppIcon.icns "$RES/AppIcon.icns"
