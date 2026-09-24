@@ -102,6 +102,13 @@ struct SubtitleSectionView: View {
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.separator))
         .sectionHighlight(state.dragHighlight.contains(.subtitle))
         .sectionHighlight(state.highlightMissingSubtitle, color: .red)
+        .overlay(alignment: .bottom) {
+            if state.current.isEmpty && !state.showsQueue {
+                Text(L("Drop a video and a subtitle file anywhere in this window, or use the Choose… buttons."))
+                    .font(.callout).foregroundStyle(.secondary)
+                    .padding(.bottom, -28)
+            }
+        }
         .onChange(of: state.highlightMissingSubtitle) { _, on in
             if on {
                 Task {

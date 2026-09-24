@@ -54,6 +54,11 @@ enum UploadOutcome {
     case uploaded(url: URL?)
 }
 
+enum CheckOutcome {
+    case exists(idSubtitle: String?)
+    case new(imdbFromServer: String?)
+}
+
 enum OSError: LocalizedError {
     case unauthorized
     case offline
@@ -256,10 +261,8 @@ actor OpenSubtitlesClient {
                           season: best["Season"]?.stringValue, episode: best["Episode"]?.stringValue)
     }
 
-    func upload(_ req: UploadRequest) async throws -> UploadOutcome {
-        let (token, _) = try await login()
-
-        // 1. TryUploadSubtitles
+    /// Builds the cd1 struct shared by TryUploadSubtitles and UploadSubtitles.
+    private func tryData(for req: UploadRequest) throws -> (cd1: [String: XMLRPCValue], idmovieimdb: String?) {
         var cd1: [String: XMLRPCValue] = [:]
         if let video = req.videoPath {
             let h = try OSHash.movieHash(of: video)
@@ -287,7 +290,28 @@ actor OpenSubtitlesClient {
         if req.highdefinition { cd1["highdefinition"] = .string("1") }
         if req.automatictranslation { cd1["automatictranslation"] = .string("1") }
         if req.foreignpartsonly { cd1["foreignpartsonly"] = .string("1") }
+        return (cd1, idmovieimdb)
+    }
 
+    /// Dry run: asks OpenSubtitles whether this subtitle is already known, without uploading.
+    func check(_ req: UploadRequest) async throws -> CheckOutcome {
+        let (token, _) = try await login()
+        let (cd1, _) = try tryData(for: req)
+        let tryResponse = try await call("TryUploadSubtitles", [.string(token), .dict(["cd1": .dict(cd1)])])
+        try ensureOK(tryResponse, fallback: "TryUploadSubtitles unknown error")
+        if tryResponse["alreadyindb"]?.intValue == 1 {
+            let d = tryResponse["data"]?.dictValue ?? tryResponse["data"]?.arrayValue?.first?.dictValue
+            return .exists(idSubtitle: d?["IDSubtitle"]?.stringValue)
+        }
+        return .new(imdbFromServer: tryResponse["data"]?.arrayValue?.first?["IDMovieImdb"]?.stringValue)
+    }
+
+    func upload(_ req: UploadRequest) async throws -> UploadOutcome {
+        let (token, _) = try await login()
+
+        // 1. TryUploadSubtitles
+        let (cd1, initialImdb) = try tryData(for: req)
+        var idmovieimdb = initialImdb
         let tryResponse = try await call("TryUploadSubtitles", [.string(token), .dict(["cd1": .dict(cd1)])])
         try ensureOK(tryResponse, fallback: "TryUploadSubtitles unknown error")
 

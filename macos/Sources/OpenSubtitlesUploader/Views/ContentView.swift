@@ -5,11 +5,17 @@ struct ContentView: View {
 
     var body: some View {
         @Bindable var state = state
-        VStack(spacing: 14) {
-            VideoSectionView()
-            SubtitleSectionView()
+        Group {
+            if state.showsQueue {
+                VSplitView {
+                    QueueView()
+                        .frame(minHeight: 120, idealHeight: 180)
+                    detail
+                }
+            } else {
+                detail
+            }
         }
-        .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color(nsColor: .windowBackgroundColor))
         .onDrop(of: [.fileURL], delegate: FileDropDelegate(state: state))
@@ -19,7 +25,7 @@ struct ContentView: View {
             }
         }
         .overlay {
-            if state.isUploading {
+            if state.isUploading, !state.showsQueue {
                 ZStack {
                     Color.black.opacity(0.25).ignoresSafeArea()
                     VStack(spacing: 12) {
@@ -45,7 +51,18 @@ struct ContentView: View {
             Text(alert.message)
         }
         .navigationTitle("OpenSubtitles Uploader")
-        .navigationSubtitle(state.video.detectedTitle)
+        .navigationSubtitle(state.showsQueue ? state.queueSummary : state.video.detectedTitle)
+    }
+
+    private var detail: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                VideoSectionView()
+                SubtitleSectionView()
+            }
+            .padding(16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var alertPresented: Binding<Bool> {
@@ -63,9 +80,33 @@ struct ContentView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(uploadTint)
-            .disabled(state.isUploading)
+            .disabled(state.isUploading || state.isBatchRunning)
             .help(L("Upload") + " (⌘↩)")
             .keyboardShortcut(.return, modifiers: .command)
+        }
+        ToolbarItem(placement: .navigation) {
+            Button {
+                state.check()
+            } label: {
+                Label(L("Check"), systemImage: "magnifyingglass.circle")
+            }
+            .help(L("Ask OpenSubtitles whether this subtitle is already in the database, without uploading") + " (⇧⌘K)")
+            .disabled(state.current.subtitle.path == nil || state.current.status.isBusy || state.isBatchRunning)
+        }
+        if state.showsQueue {
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    state.uploadAll()
+                } label: {
+                    if state.isBatchRunning {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Label(L("Upload All"), systemImage: "icloud.and.arrow.up.fill")
+                    }
+                }
+                .help(L("Upload All") + " (⇧⌘↩)")
+                .disabled(state.isBatchRunning || state.isUploading || state.uploadableItems.isEmpty)
+            }
         }
         ToolbarItem(placement: .primaryAction) {
             accountItem

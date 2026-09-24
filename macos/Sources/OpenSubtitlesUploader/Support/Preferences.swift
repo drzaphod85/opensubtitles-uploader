@@ -42,7 +42,7 @@ extension UserDefaults {
 
 enum AppInfo {
     /// Version of the Mac app. Numbered independently of the HTML5 app, as agreed with its author.
-    static let version = "1.0.0"
+    static let version = "1.1.0"
     /// Own user agent, so OpenSubtitles can tell the two apps apart (see upstream issue #130).
     static let userAgent = "OpenSubtitles-Uploader-Mac v\(version)"
     static let bundleIdentifier = "io.github.drzaphod85.opensubtitles-uploader"

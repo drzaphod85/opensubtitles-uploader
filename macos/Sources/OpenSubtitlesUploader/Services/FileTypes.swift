@@ -153,25 +153,39 @@ enum FileTypes {
     static func matchingVideo(forSubtitle subtitle: URL) -> URL? {
         let dir = subtitle.deletingLastPathComponent()
         guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { return nil }
-        let dropped = subtitle.lastPathComponent
-        let droppedExt = subtitle.pathExtension
-        // the original strips the extension plus up to 10 characters (".eng.forced")
-        let cut = min(dropped.count, droppedExt.count + 10 + (droppedExt.isEmpty ? 0 : 1))
-        let droppedName = String(dropped.dropLast(cut))
-        guard !droppedName.isEmpty else { return nil }
-        let droppedSxE = seasonEpisode(dropped)
+        // build the URL from the subtitle's directory so it compares equal even when /var → /private/var
+        return matchingVideo(forSubtitle: subtitle, among: files).map { dir.appendingPathComponent($0.lastPathComponent) }
+    }
 
-        for f in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where kind(of: f) == .video {
-            let name = baseName(f)
-            guard name.range(of: droppedName, options: .caseInsensitive) != nil else { continue }
-            let foundSxE = seasonEpisode(f.lastPathComponent)
-            let result = dir.appendingPathComponent(f.lastPathComponent)
-            if let foundSxE, let droppedSxE {
-                if foundSxE == droppedSxE { return result }
-                continue
-            }
-            return result
+    /// Same matching, but among a given list of candidate files (e.g. the files that were dropped together).
+    /// The subtitle's name is compared without its language/marker tags ("movie.en.forced.srt" → "movie"),
+    /// and a season/episode tag must match when both names have one (upstream issue #58).
+    static func matchingVideo(forSubtitle subtitle: URL, among files: [URL]) -> URL? {
+        let droppedName = subtitleBaseName(subtitle).lowercased()
+        guard !droppedName.isEmpty else { return nil }
+        let droppedSxE = seasonEpisode(subtitle.lastPathComponent)
+
+        var best: (url: URL, score: Int)?
+        for f in files where kind(of: f) == .video {
+            let name = baseName(f).lowercased()
+            let score: Int
+            if name == droppedName { score = 3 }
+            else if name.hasPrefix(droppedName) || droppedName.hasPrefix(name) { score = 2 }
+            else if name.contains(droppedName) || droppedName.contains(name) { score = 1 }
+            else { continue }
+            if let foundSxE = seasonEpisode(f.lastPathComponent), let droppedSxE, foundSxE != droppedSxE { continue }
+            if best == nil || score > best!.score { best = (f, score) }
         }
-        return nil
+        return best?.url
+    }
+
+    /// "Show.S01E02.en.forced.srt" → "Show.S01E02"
+    static func subtitleBaseName(_ url: URL) -> String {
+        var parts = url.deletingPathExtension().lastPathComponent.split(separator: ".").map(String.init)
+        while parts.count > 1, let last = parts.last?.lowercased(),
+              ["forced", "sdh", "hi", "cc", "default"].contains(last) || LanguageDetector.code(forTag: last) != nil {
+            parts.removeLast()
+        }
+        return parts.joined(separator: ".")
     }
 }

@@ -27,6 +27,12 @@ struct OpenSubtitlesUploaderApp: App {
         .defaultSize(width: 1024, height: 640)
         .commands { AppCommands(state: state) }
 
+        Window(L("Upload History"), id: "history") {
+            HistoryView()
+                .environment(state)
+        }
+        .defaultSize(width: 860, height: 420)
+
         Settings {
             SettingsView()
                 .environment(state)
@@ -60,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct AppCommands: Commands {
     let state: AppState
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -71,8 +78,22 @@ struct AppCommands: Commands {
             Button(L("Upload")) { state.verifyAndUpload() }
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(state.isUploading)
+            Button(L("Upload All")) { state.uploadAll() }
+                .keyboardShortcut(.return, modifiers: [.command, .shift])
+                .disabled(state.isUploading || state.isBatchRunning || state.uploadableItems.isEmpty)
+            Button(L("Check")) { state.check() }
+                .keyboardShortcut("k", modifiers: [.command, .shift])
+            Button(L("Check All")) { state.checkAll() }
+                .disabled(!state.showsQueue)
+            Divider()
+            Button(L("Remove uploaded items")) { state.removeFinishedItems() }
+                .disabled(!state.items.contains { $0.status == .uploaded })
             Button(L("Clear Files")) { state.reset(.all) }
                 .keyboardShortcut(.delete, modifiers: [.command, .shift])
+        }
+        CommandGroup(after: .windowList) {
+            Button(L("Upload History")) { openWindow(id: "history") }
+                .keyboardShortcut("h", modifiers: [.command, .shift])
         }
         CommandGroup(after: .textEditing) {
             Divider()

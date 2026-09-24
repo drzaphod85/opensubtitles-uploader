@@ -2,43 +2,6 @@ import Foundation
 import AppKit
 import Observation
 
-// MARK: - Form models
-
-enum ImdbStatus: Equatable {
-    case none
-    case verified(title: String)
-    case warning
-}
-
-struct VideoForm {
-    var path: URL?
-    var fileName = ""
-    var hash = ""
-    var byteSize = ""
-    var imdbId = ""
-    var movieAka = ""
-    var releaseName = ""
-    var fps = ""
-    var timeMs = ""
-    var frames = ""
-    var highDefinition = false
-    var detectedTitle = ""
-    var imdbStatus: ImdbStatus = .none
-    var backdropURL: URL?
-}
-
-struct SubtitleForm {
-    var path: URL?
-    var fileName = ""
-    var md5 = ""
-    var languageCode = ""
-    var translator = ""
-    var comment = ""
-    var hearingImpaired = false
-    var autoTranslated = false
-    var foreignPartsOnly = false
-}
-
 /// Fields whose value can be kept between sessions ("lock" icons in the original UI).
 enum LockField: String, CaseIterable {
     case imdbId = "imdbid"
@@ -78,8 +41,30 @@ struct AppAlert: Identifiable {
 final class AppState {
     static let shared = AppState()
 
-    var video = VideoForm()
-    var subtitle = SubtitleForm()
+    /// The upload queue. There is always at least one item: the one the detail form shows.
+    var items: [QueueItem] = [QueueItem()]
+    var selectedItemID: UUID?
+
+    /// The item the detail form edits (selected item, or the last one).
+    var current: QueueItem {
+        if let selectedItemID, let item = items.first(where: { $0.id == selectedItemID }) { return item }
+        return items.last!
+    }
+
+    // Proxies so the detail views keep reading `state.video` / `state.subtitle`.
+    var video: VideoForm {
+        get { current.video }
+        set { current.video = newValue }
+    }
+    var subtitle: SubtitleForm {
+        get { current.subtitle }
+        set { current.subtitle = newValue }
+    }
+    var isAnalyzingVideo: Bool { current.isAnalyzingVideo }
+    var isLookingUpImdb: Bool { current.isLookingUpImdb }
+    var isDetectingLanguage: Bool { current.isDetectingLanguage }
+    var showsQueue: Bool { items.count > 1 }
+
     var locks: Set<LockField> = []
 
     // authentication
@@ -92,10 +77,8 @@ final class AppState {
     var showLoginSheet = false
 
     // busy states
-    var isAnalyzingVideo = false
-    var isLookingUpImdb = false
     var isUploading = false
-    var isDetectingLanguage = false
+    var isBatchRunning = false
     var isSearching = false
     var uploadButtonState: UploadButtonState = .idle
 
@@ -111,8 +94,8 @@ final class AppState {
     var highlightMissingSubtitle = false
 
     let client: OpenSubtitlesClient
+    let history = UploadHistory.shared
     private var snackTask: Task<Void, Never>?
-    private var imdbLookupGeneration = 0
     private var mediaToolHintShown = false
     private var uploadAfterLogin = false
     private var credentialsTask: Task<Bool, Never>?
@@ -120,7 +103,7 @@ final class AppState {
     private init() {
         let defaults = UserDefaults.standard
         client = OpenSubtitlesClient(userAgent: AppInfo.userAgent, useSSL: defaults.bool(forKey: PrefKey.useSSL))
-        restoreLocks()
+        restoreLocks(into: current)
     }
 
     // MARK: Startup
@@ -164,12 +147,45 @@ final class AppState {
         openExternal(url)
     }
 
+    // MARK: Queue management
+
+    func item(_ id: UUID) -> QueueItem? { items.first { $0.id == id } }
+
+    func select(_ id: UUID?) {
+        selectedItemID = id
+    }
+
+    @discardableResult
+    private func appendItem() -> QueueItem {
+        let item = QueueItem()
+        restoreLocks(into: item)
+        items.append(item)
+        return item
+    }
+
+    func removeItems(_ ids: Set<UUID>) {
+        items.removeAll { ids.contains($0.id) && !$0.status.isBusy }
+        if items.isEmpty { appendItem() }
+        if let selectedItemID, !items.contains(where: { $0.id == selectedItemID }) {
+            self.selectedItemID = items.last?.id
+        }
+    }
+
+    func removeFinishedItems() {
+        removeItems(Set(items.filter { $0.status == .uploaded }.map(\.id)))
+    }
+
+    var queueSummary: String {
+        let uploaded = items.filter { $0.status == .uploaded }.count
+        return L("%@ of %@ uploaded", String(uploaded), String(items.count))
+    }
+
     // MARK: Files in / out
 
     func handleDropped(_ urls: [URL]) {
         dragHighlight = []
         isDragTargeted = false
-        let files = FileTypes.analyze(urls)
+        let files = QueuePlanner.collectFiles(urls)
         if files.isEmpty {
             showSnack(L("Dropped file is not supported"))
             return
@@ -177,18 +193,41 @@ final class AppState {
         NSApp.activate(ignoringOtherApps: true)
         showSearchSheet = false
         alert = nil
-        if uploadButtonState == .success || uploadButtonState == .partial {
-            // the previous subtitle is done; start from a clean sheet (upstream issue #108)
+
+        // the previous upload is done; start from a clean sheet (upstream issue #108)
+        if !showsQueue, uploadButtonState == .success || uploadButtonState == .partial {
             reset(.all)
         }
-        let multidrop = files.count == 2
-        if let v = files[.video] { addVideo(v, multidrop: multidrop) }
-        if let s = files[.subtitle] { addSubtitle(s, multidrop: multidrop) }
+
+        let videos = files.filter { FileTypes.kind(of: $0) == .video }
+        let subtitles = files.filter { FileTypes.kind(of: $0) == .subtitle }
+
+        // A single file, or one pair, goes into the current item like the original app did.
+        if videos.count <= 1, subtitles.count <= 1, urls.allSatisfy({ (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true }) {
+            let target = current
+            let multidrop = videos.count == 1 && subtitles.count == 1
+            if let v = videos.first { addVideo(v, to: target, multidrop: multidrop) }
+            if let s = subtitles.first { addSubtitle(s, to: target, multidrop: multidrop) }
+            return
+        }
+
+        // Several files or a folder: plan pairs and add them to the queue.
+        let pairs = QueuePlanner.plan(files)
+        var added: [QueueItem] = []
+        for pair in pairs {
+            // reuse the current item if it is still empty
+            let target = (added.isEmpty && current.isEmpty) ? current : appendItem()
+            added.append(target)
+            if let v = pair.video { addVideo(v, to: target, multidrop: true) }
+            if let s = pair.subtitle { addSubtitle(s, to: target, multidrop: true) }
+        }
+        if let first = added.first { selectedItemID = first.id }
+        showSnack(L("Added %@ items to the queue", String(added.count)))
     }
 
     func browse(_ kind: FileKind?) {
         let panel = NSOpenPanel()
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = kind == nil
         panel.allowsMultipleSelection = kind == nil
         panel.allowedContentTypes = FileTypes.contentTypes(for: kind)
         switch kind {
@@ -204,43 +243,45 @@ final class AppState {
 
     // MARK: Video
 
-    func addVideo(_ url: URL, multidrop: Bool) {
-        Task { await importVideo(url, multidrop: multidrop) }
+    func addVideo(_ url: URL, to item: QueueItem? = nil, multidrop: Bool) {
+        let target = item ?? current
+        Task { await importVideo(url, into: target, multidrop: multidrop) }
     }
 
     /// Imports a video. Local metadata (hash, size, duration, fps) is always filled in; the
     /// OpenSubtitles identification is best effort so the file stays loaded when the API is
     /// unreachable (upstream issues #41, #107). A locked IMDb id is never overwritten (#116)
     /// and a manual id entered meanwhile wins over the background lookup (#63).
-    private func importVideo(_ url: URL, multidrop: Bool) async {
-        isAnalyzingVideo = true
+    private func importVideo(_ url: URL, into item: QueueItem, multidrop: Bool) async {
+        item.isAnalyzingVideo = true
         let hash: OSHash.MovieHash
         do {
-            hash = try OSHash.movieHash(of: url)
+            hash = try await Task.detached { try OSHash.movieHash(of: url) }.value
         } catch {
-            isAnalyzingVideo = false
+            item.isAnalyzingVideo = false
             showSnack(L("Dropped file is not supported"))
-            AppLog.error("movieHash failed: \(String(describing: error))")
+            AppLog.error("movieHash failed: \(error)")
             return
         }
-        if hash.moviehash == video.hash, !video.hash.isEmpty {
-            isAnalyzingVideo = false
+        if hash.moviehash == item.video.hash, !item.video.hash.isEmpty {
+            item.isAnalyzingVideo = false
             return // already loaded
         }
 
         let media = await MediaInfoService.analyze(url)
 
-        reset(.video)
-        video.path = url
-        video.fileName = url.lastPathComponent
-        video.byteSize = hash.moviebytesize
-        video.hash = hash.moviehash
-        video.timeMs = media.durationMs.map(String.init) ?? ""
-        video.fps = media.frameRateString ?? ""
-        video.frames = media.frameCount.map(String.init) ?? ""
+        resetVideo(of: item)
+        item.video.path = url
+        item.video.fileName = url.lastPathComponent
+        item.video.byteSize = hash.moviebytesize
+        item.video.hash = hash.moviehash
+        item.video.timeMs = media.durationMs.map(String.init) ?? ""
+        item.video.fps = media.frameRateString ?? ""
+        item.video.frames = media.frameCount.map(String.init) ?? ""
         let hdByName = FileTypes.extractQuality(url.lastPathComponent) != nil
-        video.highDefinition = media.isHighDefinition || (media.height == nil && hdByName)
-        isAnalyzingVideo = false
+        item.video.highDefinition = media.isHighDefinition || (media.height == nil && hdByName)
+        item.isAnalyzingVideo = false
+        if item.status == .idle, item.subtitle.path != nil { item.status = .ready }
 
         if media.durationMs == nil, media.frameRate == nil, !mediaToolHintShown, !MediaInfoService.hasExternalTool {
             mediaToolHintShown = true
@@ -248,24 +289,24 @@ final class AppState {
         }
 
         if !multidrop, let match = FileTypes.matchingSubtitle(forVideo: url) {
-            proposeCompanion(match, kind: .subtitle)
+            proposeCompanion(match, kind: .subtitle, for: item)
         }
 
         guard UserDefaults.standard.bool(forKey: PrefKey.autoIdentify) else { return }
-        await identifyVideo(url: url, hash: hash.moviehash)
+        await identifyVideo(url: url, hash: hash.moviehash, item: item)
     }
 
     /// Asks OpenSubtitles who this video is and fills the IMDb id (unless locked).
-    private func identifyVideo(url: URL, hash: String) async {
-        imdbLookupGeneration += 1
-        let generation = imdbLookupGeneration
+    private func identifyVideo(url: URL, hash: String, item: QueueItem) async {
+        item.imdbLookupGeneration += 1
+        let generation = item.imdbLookupGeneration
         let locked = locks.contains(.imdbId)
-        isLookingUpImdb = true
-        defer { if generation == imdbLookupGeneration { isLookingUpImdb = false } }
+        item.isLookingUpImdb = true
+        defer { if generation == item.imdbLookupGeneration { item.isLookingUpImdb = false } }
 
         do {
             let identified = try await client.identify(moviehash: hash)
-            guard generation == imdbLookupGeneration, video.hash == hash else { return }
+            guard generation == item.imdbLookupGeneration, item.video.hash == hash else { return }
 
             if let meta = identified, let imdb = meta.imdbid, let title = meta.title {
                 let text: String
@@ -275,28 +316,28 @@ final class AppState {
                     text = "\(title) (\(meta.year ?? ""))"
                 }
                 if locked {
-                    showSnack(L("IMDb id is locked and was kept. Detected: %@", text), duration: 5)
-                    await lookupImdbMetadata(video.imdbId, generation: generation)
+                    if item === current { showSnack(L("IMDb id is locked and was kept. Detected: %@", text), duration: 5) }
+                    await lookupImdbMetadata(item.video.imdbId, item: item, generation: generation)
                 } else {
-                    await applyImdb(id: imdb, title: text, showId: nil, fallbackTitle: meta.episodeTitle != nil ? title : nil, generation: generation)
+                    await applyImdb(id: imdb, title: text, showId: nil, fallbackTitle: meta.episodeTitle != nil ? title : nil, item: item, generation: generation)
                 }
             } else if locked {
-                await lookupImdbMetadata(video.imdbId, generation: generation)
+                await lookupImdbMetadata(item.video.imdbId, item: item, generation: generation)
             } else if let imdb = identified?.imdbid {
-                await lookupImdbMetadata(imdb, generation: generation)
+                await lookupImdbMetadata(imdb, item: item, generation: generation)
             } else if let guess = try await client.guessMovie(fromFilename: url.lastPathComponent) {
-                guard generation == imdbLookupGeneration else { return }
+                guard generation == item.imdbLookupGeneration else { return }
                 // GetIMDBMovieDetails does not know recent 8-digit ids; fall back to the guess' own title
-                await lookupImdbMetadata(guess.imdbid, generation: generation, fallbackTitle: guess.displayTitle)
-            } else {
+                await lookupImdbMetadata(guess.imdbid, item: item, generation: generation, fallbackTitle: guess.displayTitle)
+            } else if item === current {
                 showSnack(L("Video could not be identified by OpenSubtitles. Metadata was read from the file; set the IMDb id manually."), duration: 5)
             }
         } catch {
-            guard generation == imdbLookupGeneration else { return }
-            AppLog.error("identifyVideo failed: \(String(describing: error))")
+            guard generation == item.imdbLookupGeneration else { return }
+            AppLog.error("identifyVideo failed: \(error)")
             if locked {
-                await lookupImdbMetadata(video.imdbId, generation: generation)
-            } else {
+                await lookupImdbMetadata(item.video.imdbId, item: item, generation: generation)
+            } else if item === current {
                 showSnack(friendlyImportError(error), duration: 5)
             }
         }
@@ -322,60 +363,62 @@ final class AppState {
     }
 
     /// Ask the user whether to replace the currently loaded companion file, or just load it.
-    private func proposeCompanion(_ url: URL, kind: FileKind) {
-        let existing = kind == .subtitle ? subtitle.path : video.path
+    private func proposeCompanion(_ url: URL, kind: FileKind, for item: QueueItem) {
+        let existing = kind == .subtitle ? item.subtitle.path : item.video.path
         if let existing, existing.lastPathComponent != url.lastPathComponent {
+            guard item === current else { return }
             alert = AppAlert(
                 title: kind == .subtitle ? L("Subtitle file") : L("Video file"),
                 message: L("Replace the currently loaded file with the detected one: %@", url.lastPathComponent),
                 buttons: [
                     AlertButton(title: L("YES")) {
-                        if kind == .subtitle { self.addSubtitle(url, multidrop: true) } else { self.addVideo(url, multidrop: true) }
+                        if kind == .subtitle { self.addSubtitle(url, to: item, multidrop: true) } else { self.addVideo(url, to: item, multidrop: true) }
                     },
                     AlertButton(title: L("NO"), role: .cancel) {},
                 ])
         } else if existing == nil {
-            if kind == .subtitle { addSubtitle(url, multidrop: true) } else { addVideo(url, multidrop: true) }
+            if kind == .subtitle { addSubtitle(url, to: item, multidrop: true) } else { addVideo(url, to: item, multidrop: true) }
         }
     }
 
     // MARK: IMDb
 
     /// Sets the IMDb id, title, and fetches a backdrop (Interface.imdbFromSearch in the original).
-    private func applyImdb(id rawId: String, title: String, showId: String?, fallbackTitle: String?, generation: Int) async {
-        guard generation == imdbLookupGeneration else { return }
+    private func applyImdb(id rawId: String, title: String, showId: String?, fallbackTitle: String?, item: QueueItem, generation: Int) async {
+        guard generation == item.imdbLookupGeneration else { return }
         let digits = rawId.replacingOccurrences(of: "tt", with: "")
         let id = (Int(digits) ?? 0) > 99_999_999 ? digits : "tt" + digits
-        if !locks.contains(.imdbId) { video.imdbId = id }
-        video.imdbStatus = .verified(title: title)
-        video.detectedTitle = title
-        isLookingUpImdb = false
+        if !locks.contains(.imdbId) { item.video.imdbId = id }
+        item.video.imdbStatus = .verified(title: title)
+        item.video.detectedTitle = title
+        item.isLookingUpImdb = false
         showSearchSheet = false
 
         let url = await TMDBClient.backdrop(imdbId: showId ?? id, fallbackTitle: fallbackTitle)
-        if generation == imdbLookupGeneration {
-            video.backdropURL = url
+        if generation == item.imdbLookupGeneration {
+            item.video.backdropURL = url
         }
     }
 
     /// Verifies an IMDb id with OpenSubtitles and fills the title (OsActions.imdbMetadata in the original).
     /// Pass `generation` when called from a background lookup, so a newer manual edit cancels it.
-    func lookupImdbMetadata(_ rawId: String, generation: Int? = nil, fallbackTitle: String? = nil) async {
+    func lookupImdbMetadata(_ rawId: String, item: QueueItem? = nil, generation: Int? = nil, fallbackTitle: String? = nil) async {
+        let item = item ?? current
         showSearchSheet = false
-        video.backdropURL = nil
+        item.video.backdropURL = nil
 
         let trimmed = rawId.trimmingCharacters(in: .whitespaces)
         if let n = Int(trimmed), n > 99_999_999 {
             // custom OpenSubtitles id, cannot be checked against IMDb
-            if !locks.contains(.imdbId) { video.imdbId = trimmed }
-            video.imdbStatus = .none
-            isLookingUpImdb = false
+            if !locks.contains(.imdbId) { item.video.imdbId = trimmed }
+            item.video.imdbStatus = .none
+            item.isLookingUpImdb = false
             return
         }
         guard let imdbNumber = Int(trimmed.replacingOccurrences(of: "tt", with: "")) else {
-            video.imdbStatus = .warning
-            isLookingUpImdb = false
-            showSnack(L("Wrong IMDB id"), duration: 3.5)
+            item.video.imdbStatus = .warning
+            item.isLookingUpImdb = false
+            if item === current { showSnack(L("Wrong IMDB id"), duration: 3.5) }
             return
         }
 
@@ -383,15 +426,15 @@ final class AppState {
         if let generation {
             gen = generation
         } else {
-            imdbLookupGeneration += 1
-            gen = imdbLookupGeneration
+            item.imdbLookupGeneration += 1
+            gen = item.imdbLookupGeneration
         }
-        isLookingUpImdb = true
-        if !locks.contains(.imdbId) { video.imdbId = "tt" + String(imdbNumber) }
+        item.isLookingUpImdb = true
+        if !locks.contains(.imdbId) { item.video.imdbId = "tt" + String(imdbNumber) }
 
         do {
             let details = try await client.imdbDetails(imdbid: imdbNumber)
-            guard gen == imdbLookupGeneration else { return }
+            guard gen == item.imdbLookupGeneration else { return }
             var text: String
             var fallback: String?
             if details.kind == "episode" {
@@ -403,16 +446,17 @@ final class AppState {
             } else {
                 text = "\(details.title) (\(details.year))"
             }
-            await applyImdb(id: details.id, title: text, showId: details.showImdbId, fallbackTitle: fallback, generation: gen)
+            await applyImdb(id: details.id, title: text, showId: details.showImdbId, fallbackTitle: fallback, item: item, generation: gen)
         } catch {
-            guard gen == imdbLookupGeneration else { return }
+            guard gen == item.imdbLookupGeneration else { return }
             if let fallbackTitle, case OSError.wrongImdb = error {
                 // the id came from OpenSubtitles itself, only the title lookup failed
-                await applyImdb(id: "tt" + String(imdbNumber), title: fallbackTitle, showId: nil, fallbackTitle: fallbackTitle, generation: gen)
+                await applyImdb(id: "tt" + String(imdbNumber), title: fallbackTitle, showId: nil, fallbackTitle: fallbackTitle, item: item, generation: gen)
                 return
             }
-            isLookingUpImdb = false
-            video.imdbStatus = .warning
+            item.isLookingUpImdb = false
+            item.video.imdbStatus = .warning
+            guard item === current else { return }
             let message: String
             if let e = error as? OSError {
                 switch e {
@@ -430,17 +474,18 @@ final class AppState {
     /// Called when the IMDb field loses focus with a changed value. A manual edit always wins
     /// over any background identification still in flight (upstream issue #63).
     func imdbFieldCommitted(previous: String) {
-        let value = video.imdbId.trimmingCharacters(in: .whitespaces)
+        let item = current
+        let value = item.video.imdbId.trimmingCharacters(in: .whitespaces)
         guard value != previous else { return }
-        imdbLookupGeneration += 1
-        isLookingUpImdb = false
+        item.imdbLookupGeneration += 1
+        item.isLookingUpImdb = false
         if value.isEmpty {
-            video.imdbStatus = .none
-            video.detectedTitle = ""
-            video.backdropURL = nil
+            item.video.imdbStatus = .none
+            item.video.detectedTitle = ""
+            item.video.backdropURL = nil
             return
         }
-        Task { await lookupImdbMetadata(value) }
+        Task { await lookupImdbMetadata(value, item: item) }
     }
 
     // MARK: IMDb search sheet
@@ -465,13 +510,14 @@ final class AppState {
     }
 
     func selectSearchResult(_ result: SearchResult) {
+        let item = current
         showSearchSheet = false
-        isLookingUpImdb = true
+        item.isLookingUpImdb = true
         Task {
             if let imdb = await TMDBClient.imdbId(for: result) {
-                await lookupImdbMetadata(imdb, fallbackTitle: result.title)
+                await lookupImdbMetadata(imdb, item: item, fallbackTitle: result.title)
             } else {
-                isLookingUpImdb = false
+                item.isLookingUpImdb = false
                 showSnack(L("Not found"))
             }
         }
@@ -479,10 +525,12 @@ final class AppState {
 
     // MARK: Subtitle
 
-    func addSubtitle(_ url: URL, multidrop: Bool) {
-        reset(.subtitle)
-        subtitle.path = url
-        subtitle.fileName = url.lastPathComponent
+    func addSubtitle(_ url: URL, to item: QueueItem? = nil, multidrop: Bool) {
+        let item = item ?? current
+        resetSubtitle(of: item)
+        item.subtitle.path = url
+        item.subtitle.fileName = url.lastPathComponent
+        item.status = .ready
         highlightMissingSubtitle = false
 
         Task.detached {
@@ -491,43 +539,44 @@ final class AppState {
             let machine = FileTypes.looksMachineTranslated(filename: url.lastPathComponent, content: content)
             let hi = FileTypes.looksHearingImpaired(content: content)
             let foreign = FileTypes.looksForeignPartsOnly(url: url)
-            await self.applySubtitleAnalysis(url: url, md5: md5, machine: machine, hearingImpaired: hi, foreign: foreign)
+            await self.applySubtitleAnalysis(item: item, url: url, md5: md5, machine: machine, hearingImpaired: hi, foreign: foreign)
         }
-        detectSubtitleLanguage(interactive: false)
+        detectSubtitleLanguage(item: item, interactive: false)
 
         if !multidrop, let match = FileTypes.matchingVideo(forSubtitle: url) {
-            proposeCompanion(match, kind: .video)
+            proposeCompanion(match, kind: .video, for: item)
         }
     }
 
-    private func applySubtitleAnalysis(url: URL, md5: String, machine: Bool, hearingImpaired: Bool, foreign: Bool) {
-        guard subtitle.path == url else { return }
-        subtitle.md5 = md5
-        if machine { subtitle.autoTranslated = true }
-        if hearingImpaired { subtitle.hearingImpaired = true }
-        if foreign { subtitle.foreignPartsOnly = true }
+    private func applySubtitleAnalysis(item: QueueItem, url: URL, md5: String, machine: Bool, hearingImpaired: Bool, foreign: Bool) {
+        guard item.subtitle.path == url else { return }
+        item.subtitle.md5 = md5
+        if machine { item.subtitle.autoTranslated = true }
+        if hearingImpaired { item.subtitle.hearingImpaired = true }
+        if foreign { item.subtitle.foreignPartsOnly = true }
     }
 
-    private func applyDetectedLanguage(url: URL, code: String?) {
-        isDetectingLanguage = false
-        guard subtitle.path == url else { return }
+    private func applyDetectedLanguage(item: QueueItem, url: URL, code: String?) {
+        item.isDetectingLanguage = false
+        guard item.subtitle.path == url else { return }
         if let code {
-            subtitle.languageCode = code
-        } else {
+            item.subtitle.languageCode = code
+        } else if item === current {
             showSnack(L("Language testing unconclusive, automatic detection failed"), duration: 3.8)
         }
     }
 
-    func detectSubtitleLanguage(interactive: Bool = true) {
+    func detectSubtitleLanguage(item: QueueItem? = nil, interactive: Bool = true) {
+        let item = item ?? current
         guard !locks.contains(.language) else { return }
-        guard let url = subtitle.path else {
+        guard let url = item.subtitle.path else {
             if interactive { highlightMissingSubtitle = true; showSnack(L("Drop a subtitle file or select one")) }
             return
         }
-        isDetectingLanguage = true
+        item.isDetectingLanguage = true
         Task.detached {
             let detected = LanguageDetector.bestLanguage(for: url)
-            await self.applyDetectedLanguage(url: url, code: detected)
+            await self.applyDetectedLanguage(item: item, url: url, code: detected)
         }
     }
 
@@ -535,21 +584,34 @@ final class AppState {
 
     enum ResetScope { case video, subtitle, all }
 
+    private func resetVideo(of item: QueueItem) {
+        item.imdbLookupGeneration += 1
+        item.video = VideoForm()
+        item.isLookingUpImdb = false
+        item.isAnalyzingVideo = false
+        restoreLocks(into: item, fields: [.imdbId, .movieAka])
+        if item.subtitle.path == nil { item.status = .idle }
+    }
+
+    private func resetSubtitle(of item: QueueItem) {
+        item.subtitle = SubtitleForm()
+        item.isDetectingLanguage = false
+        item.status = .idle
+        item.uploadedURL = nil
+        item.existingSubtitleURL = nil
+        restoreLocks(into: item, fields: [.language, .translator, .comment])
+    }
+
     func reset(_ scope: ResetScope) {
         switch scope {
         case .video:
-            imdbLookupGeneration += 1
-            video = VideoForm()
-            isLookingUpImdb = false
-            isAnalyzingVideo = false
-            restoreLocks(fields: [.imdbId, .movieAka])
+            resetVideo(of: current)
         case .subtitle:
-            subtitle = SubtitleForm()
-            isDetectingLanguage = false
-            restoreLocks(fields: [.language, .translator, .comment])
+            resetSubtitle(of: current)
         case .all:
-            reset(.video)
-            reset(.subtitle)
+            items = []
+            appendItem()
+            selectedItemID = nil
             uploadButtonState = .idle
             alert = nil
             showSearchSheet = false
@@ -558,7 +620,7 @@ final class AppState {
 
     // MARK: Locks ("Save between sessions")
 
-    private func restoreLocks(fields: [LockField] = LockField.allCases) {
+    private func restoreLocks(into item: QueueItem, fields: [LockField] = LockField.allCases) {
         let defaults = UserDefaults.standard
         for field in fields {
             guard let value = defaults.string(forKey: field.prefKey) else {
@@ -566,17 +628,17 @@ final class AppState {
                 continue
             }
             locks.insert(field)
-            setLockedValue(field, value)
+            setLockedValue(field, value, on: item)
         }
     }
 
-    private func setLockedValue(_ field: LockField, _ value: String) {
+    private func setLockedValue(_ field: LockField, _ value: String, on item: QueueItem) {
         switch field {
-        case .imdbId: video.imdbId = value
-        case .movieAka: video.movieAka = value
-        case .language: subtitle.languageCode = value
-        case .translator: subtitle.translator = value
-        case .comment: subtitle.comment = value
+        case .imdbId: item.video.imdbId = value
+        case .movieAka: item.video.movieAka = value
+        case .language: item.subtitle.languageCode = value
+        case .translator: item.subtitle.translator = value
+        case .comment: item.subtitle.comment = value
         }
     }
 
@@ -600,6 +662,8 @@ final class AppState {
             guard !value.isEmpty else { return }
             locks.insert(field)
             defaults.set(value, forKey: field.prefKey)
+            // a locked value applies to every item in the queue
+            for item in items where item !== current { setLockedValue(field, value, on: item) }
         }
     }
 
@@ -722,9 +786,32 @@ final class AppState {
 
     // MARK: Upload
 
-    /// Checks prerequisites before uploading (OsActions.verify in the original).
+    private func uploadRequest(for item: QueueItem) -> UploadRequest? {
+        guard let subPath = item.subtitle.path else { return nil }
+        var request = UploadRequest(videoPath: item.video.path, subtitlePath: subPath)
+        request.imdbid = item.video.imdbId.nilIfEmpty
+        request.sublanguageid = item.subtitle.languageCode.nilIfEmpty
+        request.moviereleasename = item.video.releaseName.nilIfEmpty
+        request.movieaka = item.video.movieAka.nilIfEmpty
+        request.moviefps = item.video.fps.nilIfEmpty
+        request.movieframes = item.video.frames.nilIfEmpty
+        request.movietimems = item.video.timeMs.nilIfEmpty
+        request.subauthorcomment = item.subtitle.comment.nilIfEmpty
+        request.subtranslator = item.subtitle.translator.nilIfEmpty
+        request.highdefinition = item.video.highDefinition
+        request.hearingimpaired = item.subtitle.hearingImpaired
+        request.automatictranslation = item.subtitle.autoTranslated
+        request.foreignpartsonly = item.subtitle.foreignPartsOnly
+        return request
+    }
+
+    private func subtitleURL(forId id: String?) -> URL? {
+        id.flatMap { URL(string: "https://www.opensubtitles.org/subtitles/\($0)") }
+    }
+
+    /// Checks prerequisites before uploading the current item (OsActions.verify in the original).
     func verifyAndUpload() {
-        guard !isUploading else { return }
+        guard !isUploading, !isBatchRunning else { return }
         alert = nil
         guard isLoggedIn else {
             // OpenSubtitles does not accept anonymous uploads: sign in first, then continue
@@ -732,12 +819,12 @@ final class AppState {
             showLoginSheet = true
             return
         }
-        guard subtitle.path != nil else {
+        guard current.subtitle.path != nil else {
             highlightMissingSubtitle = true
             showSnack(L("Drop a subtitle file or select one"))
             return
         }
-        if video.imdbId.trimmingCharacters(in: .whitespaces).isEmpty {
+        if current.video.imdbId.trimmingCharacters(in: .whitespaces).isEmpty {
             alert = AppAlert(
                 title: L("Upload"),
                 message: L("You haven't specified an IMDB id for the video file. It is highly recommended to do so, to correctly categorize the subtitle and make it easy to download."),
@@ -750,74 +837,176 @@ final class AppState {
         }
     }
 
+    /// Uploads the current item and shows the result as an alert.
     func upload() {
-        guard !isUploading, let subPath = subtitle.path else { return }
+        guard !isUploading, !isBatchRunning else { return }
+        let item = current
+        guard let request = uploadRequest(for: item) else { return }
         alert = nil
         uploadButtonState = .idle
-
-        var request = UploadRequest(videoPath: video.path, subtitlePath: subPath)
-        request.imdbid = video.imdbId.nilIfEmpty
-        request.sublanguageid = subtitle.languageCode.nilIfEmpty
-        request.moviereleasename = video.releaseName.nilIfEmpty
-        request.movieaka = video.movieAka.nilIfEmpty
-        request.moviefps = video.fps.nilIfEmpty
-        request.movieframes = video.frames.nilIfEmpty
-        request.movietimems = video.timeMs.nilIfEmpty
-        request.subauthorcomment = subtitle.comment.nilIfEmpty
-        request.subtranslator = subtitle.translator.nilIfEmpty
-        request.highdefinition = video.highDefinition
-        request.hearingimpaired = subtitle.hearingImpaired
-        request.automatictranslation = subtitle.autoTranslated
-        request.foreignpartsonly = subtitle.foreignPartsOnly
-
         isUploading = true
         Task {
             defer { isUploading = false }
-            do {
-                _ = await credentialsLoaded()
-                let outcome = try await client.upload(request)
-                switch outcome {
-                case .alreadyInDatabase(let idSubtitle, let hashAdded, let filenameAdded):
-                    uploadButtonState = .partial
-                    var lines = [L("Subtitle was already present in the database") + "."]
-                    lines.append("• " + (hashAdded ? L("The hash has been added!") : L("The hash too...")))
-                    lines.append("• " + (filenameAdded ? L("The file name has been added!") : L("The file name too...")))
-                    var buttons = [AlertButton(title: L("OK")) { self.reset(.all) }]
-                    if let idSubtitle, let url = URL(string: "https://www.opensubtitles.org/subtitles/\(idSubtitle)") {
-                        buttons.append(AlertButton(title: L("OPEN IN BROWSER")) { self.openExternal(url) })
-                    }
-                    alert = AppAlert(title: L("Upload"), message: lines.joined(separator: "\n"), tone: .partial, buttons: buttons)
-                case .uploaded(let url):
-                    uploadButtonState = .success
-                    var buttons = [AlertButton(title: L("OK")) { self.reset(.all) }]
-                    if let url {
-                        buttons.append(AlertButton(title: L("OPEN IN BROWSER")) { self.openExternal(url); self.reset(.all) })
-                    }
-                    alert = AppAlert(title: L("Upload"), message: L("Subtitle was successfully uploaded!"), tone: .success, buttons: buttons)
-                }
-            } catch {
-                AppLog.error("Upload failed: \(String(describing: error))")
+            let result = await performUpload(request, item: item)
+            switch result {
+            case .exists(let url):
+                uploadButtonState = .partial
+                var lines = [L("Subtitle was already present in the database") + "."]
+                lines.append("• " + item.existsDetails.0)
+                lines.append("• " + item.existsDetails.1)
+                var buttons = [AlertButton(title: L("OK")) { self.reset(.all) }]
+                if let url { buttons.append(AlertButton(title: L("OPEN IN BROWSER")) { self.openExternal(url) }) }
+                alert = AppAlert(title: L("Upload"), message: lines.joined(separator: "\n"), tone: .partial, buttons: buttons)
+                NotificationService.post(title: L("Subtitle was already present in the database"), body: item.displayName, url: url)
+            case .uploaded(let url):
+                uploadButtonState = .success
+                var buttons = [AlertButton(title: L("OK")) { self.reset(.all) }]
+                if let url { buttons.append(AlertButton(title: L("OPEN IN BROWSER")) { self.openExternal(url); self.reset(.all) }) }
+                alert = AppAlert(title: L("Upload"), message: L("Subtitle was successfully uploaded!"), tone: .success, buttons: buttons)
+                NotificationService.post(title: L("Subtitle was successfully uploaded!"), body: item.displayName, url: url)
+            case .failed(let message):
                 uploadButtonState = .failure
-                let message: String
-                if let e = error as? OSError {
-                    switch e {
-                    case .unavailable, .offline: message = L("OpenSubtitles is temporarily unavailable, please retry in a little while")
-                    case .maintenance: message = L("OpenSubtitles is under maintenance, please retry in a few hours")
-                    case .invalidFormat: message = L("The subtitle has invalid format, review it before uploading to OpenSubtitles (try removing URL that might be considered as advertising for a third party website)")
-                    case .missingImdb: message = L("You haven't specified an IMDB id for the video file. It is highly recommended to do so, to correctly categorize the subtitle and make it easy to download.")
-                    default: message = L("Something went wrong :(")
-                    }
-                } else if let urlError = error as? URLError, urlError.code == .timedOut {
-                    message = L("OpenSubtitles is temporarily unavailable, please retry in a little while")
-                } else {
-                    message = L("Something went wrong :(")
-                }
                 alert = AppAlert(title: L("Upload"), message: message, tone: .failure, buttons: [
                     AlertButton(title: L("RETRY")) { self.upload() },
                     AlertButton(title: L("OK"), role: .cancel) { self.uploadButtonState = .idle },
                 ])
+                NotificationService.post(title: L("Something went wrong :("), body: item.displayName)
             }
             requestAttentionIfNeeded()
+        }
+    }
+
+    private enum UploadResult {
+        case uploaded(URL?)
+        case exists(URL?)
+        case failed(String)
+    }
+
+    /// Runs one upload, updates the item's status and the history.
+    private func performUpload(_ request: UploadRequest, item: QueueItem) async -> UploadResult {
+        item.status = .uploading
+        _ = await credentialsLoaded()
+        do {
+            let outcome = try await client.upload(request)
+            switch outcome {
+            case .alreadyInDatabase(let idSubtitle, let hashAdded, let filenameAdded):
+                let url = subtitleURL(forId: idSubtitle)
+                item.status = .exists
+                item.existingSubtitleURL = url
+                item.existsDetails = (
+                    hashAdded ? L("The hash has been added!") : L("The hash too..."),
+                    filenameAdded ? L("The file name has been added!") : L("The file name too...")
+                )
+                history.add(historyEntry(for: item, result: .exists, url: url))
+                return .exists(url)
+            case .uploaded(let url):
+                item.status = .uploaded
+                item.uploadedURL = url
+                history.add(historyEntry(for: item, result: .uploaded, url: url))
+                return .uploaded(url)
+            }
+        } catch {
+            AppLog.error("Upload failed: \(error)")
+            let message = friendlyUploadError(error)
+            item.status = .failed(message)
+            return .failed(message)
+        }
+    }
+
+    private func friendlyUploadError(_ error: Error) -> String {
+        if let e = error as? OSError {
+            switch e {
+            case .unavailable, .offline: return L("OpenSubtitles is temporarily unavailable, please retry in a little while")
+            case .maintenance: return L("OpenSubtitles is under maintenance, please retry in a few hours")
+            case .invalidFormat: return L("The subtitle has invalid format, review it before uploading to OpenSubtitles (try removing URL that might be considered as advertising for a third party website)")
+            case .missingImdb: return L("You haven't specified an IMDB id for the video file. It is highly recommended to do so, to correctly categorize the subtitle and make it easy to download.")
+            case .unauthorized: return L("Wrong username or password")
+            default: return L("Something went wrong :(")
+            }
+        }
+        if let urlError = error as? URLError, urlError.code == .timedOut {
+            return L("OpenSubtitles is temporarily unavailable, please retry in a little while")
+        }
+        return L("Something went wrong :(")
+    }
+
+    private func historyEntry(for item: QueueItem, result: HistoryEntry.Result, url: URL?) -> HistoryEntry {
+        HistoryEntry(subtitleName: item.subtitle.fileName,
+                     videoName: item.video.fileName.nilIfEmpty,
+                     languageCode: item.subtitle.languageCode.nilIfEmpty,
+                     imdbId: item.video.imdbId.nilIfEmpty,
+                     title: item.video.detectedTitle.nilIfEmpty,
+                     result: result,
+                     url: url)
+    }
+
+    // MARK: Batch upload / check
+
+    /// Items that can still be uploaded, in queue order.
+    var uploadableItems: [QueueItem] { items.filter { $0.canUpload } }
+
+    /// Uploads every item that has a subtitle and is not uploaded yet, one after the other.
+    func uploadAll() {
+        guard !isUploading, !isBatchRunning else { return }
+        guard isLoggedIn else {
+            uploadAfterLogin = false
+            showLoginSheet = true
+            return
+        }
+        let todo = uploadableItems
+        guard !todo.isEmpty else { return }
+        alert = nil
+        isBatchRunning = true
+        Task {
+            defer { isBatchRunning = false }
+            var uploaded = 0, exists = 0, failed = 0
+            for item in todo {
+                guard let request = uploadRequest(for: item) else { continue }
+                switch await performUpload(request, item: item) {
+                case .uploaded: uploaded += 1
+                case .exists: exists += 1
+                case .failed: failed += 1
+                }
+            }
+            let summary = L("Batch upload finished: %@ uploaded, %@ already in the database, %@ failed.", String(uploaded), String(exists), String(failed))
+            alert = AppAlert(title: L("Upload All"), message: summary, tone: failed > 0 ? .failure : (exists > 0 ? .partial : .success), buttons: [
+                AlertButton(title: L("OK")) {},
+                AlertButton(title: L("Remove uploaded items")) { self.removeFinishedItems() },
+            ])
+            NotificationService.post(title: L("Upload All"), body: summary)
+            requestAttentionIfNeeded()
+        }
+    }
+
+    /// Dry run for one item: does OpenSubtitles already have this subtitle?
+    func check(_ item: QueueItem? = nil) {
+        let item = item ?? current
+        guard let request = uploadRequest(for: item), !item.status.isBusy, item.status != .uploaded else {
+            if item.subtitle.path == nil { highlightMissingSubtitle = true; showSnack(L("Drop a subtitle file or select one")) }
+            return
+        }
+        item.status = .checking
+        Task {
+            do {
+                switch try await client.check(request) {
+                case .exists(let idSubtitle):
+                    item.status = .exists
+                    item.existingSubtitleURL = subtitleURL(forId: idSubtitle)
+                    if item === current { showSnack(L("Subtitle was already present in the database"), duration: 4) }
+                case .new:
+                    item.status = .ready
+                    if item === current { showSnack(L("Not in the database yet, ready to upload."), duration: 3) }
+                }
+            } catch {
+                item.status = .ready
+                if item === current { showSnack(friendlyUploadError(error), duration: 4) }
+            }
+        }
+    }
+
+    func checkAll() {
+        for item in items where item.subtitle.path != nil && !item.status.isBusy && item.status != .uploaded {
+            check(item)
         }
     }
 

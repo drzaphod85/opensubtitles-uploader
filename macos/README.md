@@ -41,6 +41,20 @@ Native replacements: `mediainfo` → AVFoundation (falls back to `mediainfo` or
 `ffprobe` if installed via Homebrew, e.g. for MKV files), `detect-lang` →
 NaturalLanguage framework, localStorage → UserDefaults + Keychain.
 
+## Queue, check, history
+
+- **Queue.** Drop several files or a whole folder and the app pairs every subtitle with
+  its video (same name, same `S01E02` tag; one video can serve several languages). The
+  queue table appears above the form; select a row to edit it. **Upload All** (⇧⌘↩)
+  uploads the queue one item after the other and shows a summary. This is the batch
+  upload asked for in upstream issue #14.
+- **Check** (⇧⌘K) asks OpenSubtitles whether a subtitle is already in the database
+  without uploading it, for one item or the whole queue (File › Check All).
+- **Upload History** (Window › Upload History, ⇧⌘H) lists everything uploaded from this
+  Mac with links to the subtitle pages. Stored in
+  `~/Library/Application Support/OpenSubtitles Uploader/history.json`.
+- A Notification Center banner reports finished uploads when the app is in the background.
+
 ## Fixes for known issues of the HTML5 version
 
 The macOS version addresses several long-standing reports from the
@@ -61,7 +75,7 @@ The macOS version addresses several long-standing reports from the
 | #110 / #80 long IMDb ids | 8-digit ids are accepted; an id the server cannot verify is flagged but still uploadable. |
 | #124 / #126 app does not start, "API seems offline" | Not applicable: no NW.js runtime, HTTPS on by default, native networking. |
 
-Not addressed (yet): batch upload of several subtitles at once (#14).
+Batch upload of several subtitles at once (#14) is covered by the queue, see above.
 
 ## Languages
 
@@ -140,6 +154,9 @@ xcrun notarytool submit build/OpenSubtitles-Uploader-2.8.0-macOS.dmg --keychain-
 | ⌘ O | Import file(s) |
 | ⇧ ⌘ ⌫ | Clear file(s) |
 | ⌘ ↩ | Upload |
+| ⇧ ⌘ ↩ | Upload All |
+| ⇧ ⌘ K | Check |
+| ⇧ ⌘ H | Upload History |
 | ⌘ F | Search on IMDb |
 | ⇧ ⌘ L | Auto-detect subtitle language |
 | ⌘ , | Settings |
