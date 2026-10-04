@@ -8,3 +8,4 @@ macos/.build
 macos/build
 macos/.swiftpm
 .DS_Store
+!macos/Scripts/test.sh
