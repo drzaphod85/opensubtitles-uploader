@@ -18,9 +18,9 @@
 # SIGN_IDENTITY="Developer ID Application: Name (TEAMID)" or force ad hoc with SIGN_IDENTITY="-".
 #
 # Notarizing needs credentials stored once with:
-#   xcrun notarytool store-credentials <profile> --apple-id <apple id> --team-id <TEAMID>
-# (asks for an app-specific password from appleid.apple.com). The profile name is taken from
-# NOTARY_PROFILE (default "VideoCleaner", the profile already used for the author's other app).
+#   xcrun notarytool store-credentials opensubtitles-uploader --apple-id <apple id> --team-id <TEAMID>
+# (asks for an app-specific password from appleid.apple.com). Use another profile name with
+# NOTARY_PROFILE=<name>.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -31,7 +31,7 @@ EXECUTABLE="OpenSubtitlesUploader"
 BUNDLE_ID="io.github.drzaphod85.opensubtitles-uploader"
 VERSION="$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Sources/OpenSubtitlesUploader/Support/Preferences.swift)"
 DMG_NAME="OpenSubtitles-Uploader-$VERSION-macOS.dmg"
-NOTARY_PROFILE="${NOTARY_PROFILE:-VideoCleaner}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-opensubtitles-uploader}"
 REPO="drzaphod85/opensubtitles-uploader"
 BRANCH="master"
 TAP_REPO="drzaphod85/homebrew-tap"
