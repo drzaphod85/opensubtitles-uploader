@@ -16,6 +16,21 @@ OpenSubtitles user agent (`OpenSubtitles-Uploader-Mac`) and its own API keys. Th
 HTML5 app is not affected by anything in the `macos/` folder.
 
 Requires macOS 14 (Sonoma) or later. Universal binary (Apple silicon + Intel).
+Signed with a Developer ID and notarized by Apple (from version 1.1.0).
+
+## Install
+
+With [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask drzaphod85/tap/opensubtitles-uploader
+```
+
+Update with `brew upgrade --cask opensubtitles-uploader`; remove with
+`brew uninstall --cask opensubtitles-uploader` (add `--zap` to also remove settings,
+the upload history and logs). Or download the DMG from the
+[latest release](https://github.com/drzaphod85/opensubtitles-uploader/releases/latest)
+and drag the app to Applications.
 
 Original application by [Jean van Kasteel (vankasteelj)](https://github.com/vankasteelj).
 macOS version by [Lasse L (drzaphod85)](https://github.com/drzaphod85). Both are
@@ -129,13 +144,12 @@ and Finder add extended attributes to folders under `~/Documents`, which makes
 the checkout in such a folder, use the `.dmg` for distribution and testing of
 the signature.
 
-The app is ad-hoc signed. For distribution outside the App Store it should be
-signed with a Developer ID certificate and notarized:
-
-```bash
-codesign --force --deep --options runtime --sign "Developer ID Application: …" "build/OpenSubtitles Uploader.app"
-xcrun notarytool submit build/OpenSubtitles-Uploader-2.8.0-macOS.dmg --keychain-profile … --wait
-```
+`build-app.sh` signs with a **Developer ID Application** certificate when one is in the
+keychain (hardened runtime, secure timestamp) and falls back to ad hoc signing otherwise.
+`--notarize` also sends the DMG to Apple and staples the ticket; `--release` then uploads
+the DMG to the GitHub release `v<version>` and updates the Homebrew cask in
+[drzaphod85/homebrew-tap](https://github.com/drzaphod85/homebrew-tap). See the comments
+at the top of the script for the one-time `notarytool` setup.
 
 ## Troubleshooting
 
@@ -145,7 +159,7 @@ xcrun notarytool submit build/OpenSubtitles-Uploader-2.8.0-macOS.dmg --keychain-
 - The first launch of a freshly built, unnotarized bundle can take 15–30 s while
   macOS verifies the binary; later launches are instant. An ad hoc signed build
   also triggers the Keychain permission prompt for the stored password on every
-  new build; a Developer ID signed release does not.
+  new build; the Developer ID signed releases do not.
 
 ## Keyboard shortcuts
 
